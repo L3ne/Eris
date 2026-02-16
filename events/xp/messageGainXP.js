@@ -43,6 +43,7 @@ module.exports = {
                     const embed = new EmbedBuilder()
                         .setDescription(levelUpMessage)
                         .setThumbnail(message.author.displayAvatarURL({ dynamic: true }))
+                        .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
                         .setTimestamp();
 
                     await channel.send({ embeds: [embed] });
