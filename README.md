@@ -9,7 +9,7 @@ discord.js | mongoose
 ## setup
 
 ```bash
-git clone this repo
+git clone https://github.com/L3ne/Eris.git
 npm install
 node index.js / .
 ```
