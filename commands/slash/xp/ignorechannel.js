@@ -27,11 +27,23 @@ module.exports = {
             description: "Le canal à ajouter ou retirer",
             type: 7, // Channel
             required: false
+        },
+        {
+            name: "type",
+            description: "Type d'XP à ignorer pour ce canal",
+            type: 3, // String
+            required: false,
+            choices: [
+                { name: "Messages et vocal", value: "both" },
+                { name: "Messages uniquement", value: "message" },
+                { name: "Vocal uniquement", value: "voice" }
+            ]
         }
     ],
     execute: async (client, interaction) => {
         const action = interaction.options.getString('action');
         const channel = interaction.options.getChannel('canal');
+        const type = interaction.options.getString('type') || 'both';
 
         try {
             let settings = await LevelSettings.findOne({ guildId: interaction.guild.id });
@@ -45,9 +57,12 @@ module.exports = {
                     minXP: 15,
                     maxXP: 25,
                     voiceInterval: 600000,
-                    voiceXPAmount: 10,
+                    voiceMinXP: 15,
+                    voiceMaxXP: 25,
                     levelUpChannel: null,
-                    ignoredChannels: []
+                    ignoredChannels: [],
+                    ignoredChannelsMessage: [],
+                    ignoredChannelsVoice: []
                 });
             }
 
@@ -65,12 +80,34 @@ module.exports = {
                         });
                     }
 
-                    if (settings.ignoredChannels.includes(channel.id)) {
-                        embed.setDescription(`❌ Le canal ${channel} est déjà dans la liste des canaux ignorés.`);
-                    } else {
-                        settings.ignoredChannels.push(channel.id);
+                    let added = false;
+                    let message = '';
+                    
+                    if (type === 'both' || type === 'message') {
+                        if (!settings.ignoredChannelsMessage.includes(channel.id)) {
+                            settings.ignoredChannelsMessage.push(channel.id);
+                            added = true;
+                            message += '✅ Messages ignorés\n';
+                        } else {
+                            message += '⚠️ Messages déjà ignorés\n';
+                        }
+                    }
+                    
+                    if (type === 'both' || type === 'voice') {
+                        if (!settings.ignoredChannelsVoice.includes(channel.id)) {
+                            settings.ignoredChannelsVoice.push(channel.id);
+                            added = true;
+                            message += '✅ Vocal ignoré\n';
+                        } else {
+                            message += '⚠️ Vocal déjà ignoré\n';
+                        }
+                    }
+                    
+                    if (added) {
                         await settings.save();
-                        embed.setDescription(`✅ Le canal ${channel} a été ajouté à la liste des canaux ignorés.`);
+                        embed.setDescription(`**${channel}** configuré :\n${message}`);
+                    } else {
+                        embed.setDescription(`**${channel}** déjà configuré :\n${message}`);
                     }
                     break;
 
@@ -82,24 +119,67 @@ module.exports = {
                         });
                     }
 
-                    const index = settings.ignoredChannels.indexOf(channel.id);
-                    if (index === -1) {
-                        embed.setDescription(`❌ Le canal ${channel} n'est pas dans la liste des canaux ignorés.`);
-                    } else {
-                        settings.ignoredChannels.splice(index, 1);
+                    let removed = false;
+                    let removeMessage = '';
+                    
+                    if (type === 'both' || type === 'message') {
+                        const index = settings.ignoredChannelsMessage.indexOf(channel.id);
+                        if (index !== -1) {
+                            settings.ignoredChannelsMessage.splice(index, 1);
+                            removed = true;
+                            removeMessage += '✅ Messages réactivés\n';
+                        } else {
+                            removeMessage += '⚠️ Messages n\'étaient pas ignorés\n';
+                        }
+                    }
+                    
+                    if (type === 'both' || type === 'voice') {
+                        const index = settings.ignoredChannelsVoice.indexOf(channel.id);
+                        if (index !== -1) {
+                            settings.ignoredChannelsVoice.splice(index, 1);
+                            removed = true;
+                            removeMessage += '✅ Vocal réactivé\n';
+                        } else {
+                            removeMessage += '⚠️ Vocal n\'était pas ignoré\n';
+                        }
+                    }
+                    
+                    if (removed) {
                         await settings.save();
-                        embed.setDescription(`✅ Le canal ${channel} a été retiré de la liste des canaux ignorés.`);
+                        embed.setDescription(`**${channel}** mis à jour :\n${removeMessage}`);
+                    } else {
+                        embed.setDescription(`**${channel}** n\'avait pas de changement :\n${removeMessage}`);
                     }
                     break;
 
                 case 'list':
-                    if (settings.ignoredChannels.length === 0) {
+                    const allIgnored = [
+                        ...settings.ignoredChannelsMessage.map(id => ({ id, type: 'message' })),
+                        ...settings.ignoredChannelsVoice.map(id => ({ id, type: 'voice' }))
+                    ];
+                    
+                    if (allIgnored.length === 0) {
                         embed.setDescription('📋 Aucun canal n\'est actuellement ignoré.');
                     } else {
-                        const channelList = settings.ignoredChannels
-                            .map(id => {
+                        const channelMap = new Map();
+                        
+                        allIgnored.forEach(({ id, type }) => {
+                            if (!channelMap.has(id)) {
+                                channelMap.set(id, new Set());
+                            }
+                            channelMap.get(id).add(type);
+                        });
+                        
+                        const channelList = Array.from(channelMap.entries())
+                            .map(([id, types]) => {
                                 const ch = interaction.guild.channels.cache.get(id);
-                                return ch ? `• ${ch}` : `• Canal inconnu (${id})`;
+                                const typeIcons = {
+                                    message: '💬',
+                                    voice: '🎤',
+                                    both: '🔄'
+                                };
+                                const typeText = Array.from(types).map(t => typeIcons[t]).join(' ');
+                                return ch ? `• ${typeText} ${ch}` : `• ${typeText} Canal inconnu (${id})`;
                             })
                             .join('\n');
                         
@@ -108,20 +188,24 @@ module.exports = {
                             .setDescription(channelList)
                             .addFields({ 
                                 name: 'Total', 
-                                value: `${settings.ignoredChannels.length} canal(x)`, 
+                                value: `${channelMap.size} canal(x)`, 
                                 inline: true 
                             });
                     }
                     break;
 
                 case 'clear':
-                    if (settings.ignoredChannels.length === 0) {
+                    const messageCount = settings.ignoredChannelsMessage.length;
+                    const voiceCount = settings.ignoredChannelsVoice.length;
+                    const total = messageCount + voiceCount;
+                    
+                    if (total === 0) {
                         embed.setDescription('📋 La liste des canaux ignorés est déjà vide.');
                     } else {
-                        const count = settings.ignoredChannels.length;
-                        settings.ignoredChannels = [];
+                        settings.ignoredChannelsMessage = [];
+                        settings.ignoredChannelsVoice = [];
                         await settings.save();
-                        embed.setDescription(`✅ ${count} canal(x) ont été retirés de la liste des canaux ignorés.`);
+                        embed.setDescription(`✅ ${total} canal(x) ont été retirés :\n• ${messageCount} pour les messages\n• ${voiceCount} pour le vocal`);
                     }
                     break;
             }

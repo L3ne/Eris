@@ -63,6 +63,22 @@ module.exports = {
             max_value: 100
         },
         {
+            name: 'voice_min_xp',
+            description: 'XP minimum par intervalle vocal',
+            type: 4,
+            required: false,
+            min_value: 1,
+            max_value: 100
+        },
+        {
+            name: 'voice_max_xp',
+            description: 'XP maximum par intervalle vocal',
+            type: 4,
+            required: false,
+            min_value: 1,
+            max_value: 100
+        },
+        {
             name: 'levelup_channel',
             description: 'Salon pour les messages de level up',
             type: 7,
@@ -118,6 +134,16 @@ module.exports = {
                 changes.push(`XP par intervalle vocal: ${updates.voiceXPAmount}`);
             }
 
+            if (interaction.options.get('voice_min_xp') !== null) {
+                updates.voiceMinXP = interaction.options.getInteger('voice_min_xp');
+                changes.push(`XP minimum vocal: ${updates.voiceMinXP}`);
+            }
+
+            if (interaction.options.get('voice_max_xp') !== null) {
+                updates.voiceMaxXP = interaction.options.getInteger('voice_max_xp');
+                changes.push(`XP maximum vocal: ${updates.voiceMaxXP}`);
+            }
+
             if (interaction.options.get('levelup_channel') !== null) {
                 const channel = interaction.options.getChannel('levelup_channel');
                 updates.levelUpChannel = channel ? channel.id : null;
@@ -136,7 +162,8 @@ module.exports = {
                         { name: 'XP minimum', value: `${settings.minXP}`, inline: true },
                         { name: 'XP maximum', value: `${settings.maxXP}`, inline: true },
                         { name: 'Intervalle vocal', value: `${settings.voiceInterval / 60000} minutes`, inline: true },
-                        { name: 'XP par intervalle vocal', value: `${settings.voiceXPAmount}`, inline: true },
+                        { name: 'XP minimum vocal', value: `${settings.voiceMinXP || 15}`, inline: true },
+                        { name: 'XP maximum vocal', value: `${settings.voiceMaxXP || 25}`, inline: true },
                         { name: 'Salon level up', value: settings.levelUpChannel ? `<#${settings.levelUpChannel}>` : 'Aucun', inline: true }
                     )
                     .setTimestamp();

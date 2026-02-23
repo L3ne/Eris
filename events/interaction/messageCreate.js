@@ -1,5 +1,6 @@
 const { EmbedBuilder, Collection, PermissionFlagsBits } = require('discord.js');
 const ms = require('ms')
+const config = require('../../config.json')
 
 const cooldowns = new Collection();
 
@@ -25,7 +26,7 @@ module.exports = {
         
         if(command) {
             // Vérifier si l'utilisateur est owner du bot
-            const isOwner = message.author.id === client.config.ownerID;
+            const isOwner = message.author.id === config.ownerID;
             
             if(command.cooldown && cooldowns.has(`${message.author.id}|${command.name}`)) 
                 return message.error(`You are on a **${ms(cooldowns.get(`${message.author.id}|${command.name}`) - Date.now(), {long : true})}** cooldown.`)

@@ -73,12 +73,15 @@ class XPUtils {
 
         const oldLevel = levelData.level;
         const newLevel = this.calculateLevel(levelData.xp);
+        
+        console.log(`🎤 addVoiceXP: userId=${userId}, +${xpAmount}XP, totalXP=${levelData.xp}, oldLevel=${oldLevel}, newLevel=${newLevel}`);
 
         if (newLevel > oldLevel) {
             await Level.updateOne(
                 { guildId, userId },
                 { level: newLevel }
             );
+            console.log(`⬆️ Level up vocal appliqué: ${oldLevel} → ${newLevel}`);
             return { levelUp: true, newLevel, oldLevel };
         }
 

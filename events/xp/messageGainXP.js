@@ -14,7 +14,7 @@ module.exports = {
             if (!settings || !settings.messageXP) return;
 
             // Vérifier si le canal est ignoré
-            if (settings.ignoredChannels && settings.ignoredChannels.includes(message.channel.id)) {
+            if (settings.ignoredChannelsMessage && settings.ignoredChannelsMessage.includes(message.channel.id)) {
                 return;
             }
 

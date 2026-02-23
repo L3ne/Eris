@@ -34,6 +34,14 @@ const levelSettingsSchema = new mongoose.Schema({
         type: Number,
         default: 10
     },
+    voiceMinXP: {
+        type: Number,
+        default: 15
+    },
+    voiceMaxXP: {
+        type: Number,
+        default: 25
+    },
     levelUpChannel: {
         type: String,
         default: null
@@ -43,6 +51,14 @@ const levelSettingsSchema = new mongoose.Schema({
         default: "🎉 Félicitations {user} ! \nVous avez atteint le niveau **{level}** !"
     },
     ignoredChannels: {
+        type: [String],
+        default: []
+    },
+    ignoredChannelsMessage: {
+        type: [String],
+        default: []
+    },
+    ignoredChannelsVoice: {
         type: [String],
         default: []
     }

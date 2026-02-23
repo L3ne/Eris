@@ -10,8 +10,8 @@ module.exports = {
         const user = message.mentions.users.first() || message.author;
         const member = await message.guild.members.fetch(user.id);
 
-        const avatar = user.displayAvatarURL({ size: 4096 });
-        const avatarServ = member.displayAvatarURL({ size: 4096 });
+        const avatar = user.displayAvatarURL({ size: 4096, dynamic: true });
+        const avatarServ = member.displayAvatarURL({ size: 4096, dynamic: true });
         
         if (member.avatar) {
             return await message.reply({

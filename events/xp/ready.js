@@ -1,4 +1,5 @@
 const voiceXPEvent = require('./voiceXP');
+const gradient = require('gradient-string');
 
 module.exports = {
     name: 'clientReady',
@@ -11,8 +12,8 @@ module.exports = {
         }, 5000); // Wait 5 seconds for guilds to be ready
         
         setInterval(() => {
-            voiceXPEvent.processVoiceXP.call({ client });
+            voiceXPEvent.processVoiceXP(client);
         }, 60000);
-        console.log('Système d\'XP initialisé avec succès!');
+        console.log(gradient('blue', 'cyan')('Système d\'XP initialisé avec succès!'));
     }
 };

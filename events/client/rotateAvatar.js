@@ -1,12 +1,11 @@
+const gradient = require('gradient-string');
+const fs = require('fs');
+const path = require('path');
 
 module.exports = {
     name: 'clientReady',
     once: true,
-    execute(client) {
- 
-        const fs = require('fs');
-        const path = require('path');
-        
+    execute: async (client) => {
         client.avatarRotation = true;
         client.avatarIndex = 0;
         
@@ -14,11 +13,6 @@ module.exports = {
         const avatarDir = path.join(__dirname, '../../public/pp');
         
         try {
-            // Créer le dossier s'il n'existe pas
-            if (!fs.existsSync(avatarDir)) {
-                fs.mkdirSync(avatarDir, { recursive: true });
-                console.log('📁 Dossier avatars créé');
-            }
             
             const files = fs.readdirSync(avatarDir).filter(file => 
                 file.endsWith('.jpg') || file.endsWith('.png') || file.endsWith('.gif') || file.endsWith('.webp')
@@ -45,9 +39,9 @@ module.exports = {
                     }
                 }, 45 * 60 * 1000); // 45 minutes
                 
-                console.log(`Rotation d'avatars activée! ${files.length} avatars trouvés. Rotation toutes les 45 minutes.`);
+                console.log(gradient('blue', 'cyan')(`Système d'avatar rotation initialisé avec succès!`));
             } else {
-                console.log('⚠️ Aucun avatar trouvé dans le dossier public/avatars');
+                console.log(gradient('red', 'yellow')('⚠️ Aucun avatar trouvé dans le dossier public/avatars'));
             }
             
         } catch (error) {
