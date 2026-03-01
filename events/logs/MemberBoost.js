@@ -7,7 +7,7 @@ module.exports = {
     const logSettings = await LogSettings.findOne({ guildId: oldMember.guild.id });
     if (!logSettings || !logSettings.logChannels.boost || !logSettings.logChannels.boost.enabled) return;
 
-    const logChannel = client.channels.cache.get(logSettings.logChannels.boost);
+    const logChannel = client.channels.cache.get(logSettings.logChannels.boost.channelId);
     if (!logChannel) return;
 
     // Si un membre booste le serveur
