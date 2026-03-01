@@ -33,7 +33,7 @@ module.exports = {
                             `**Serveurs:** ${guildCount}`,
                             `**Utilisateurs:** ${userCount}`,
                             `**Salons:** ${channelCount}`,
-                            `**Uptime:** <t:${Math.floor(client.uptime / 1000)}:R>`
+                            `**Uptime:** <t:${Math.floor(client.uptime / 1000)}:D>`
                         ].join('\n'),
                         inline: true
                     },
