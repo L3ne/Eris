@@ -2,7 +2,10 @@ const {
     EmbedBuilder, 
     ActionRowBuilder, 
     ButtonBuilder, 
-    ButtonStyle 
+    ButtonStyle,
+    ModalBuilder,
+    TextInputBuilder,
+    TextInputStyle
 } = require('discord.js');
 
 const Level = require('../../../schemas/levelSchema');
@@ -67,10 +70,8 @@ module.exports = {
                     .setColor('#FFD700')
                     .setTitle(`🏆 Classement de ${interaction.guild.name}`)
                     .setDescription(leaderboard || 'Aucun membre valide trouvé.')
-                    .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
-                    .setFooter({
-                        text: `Page ${page + 1} / ${totalPages}`
-                    })
+                	.setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+                    .setFooter({ text: `Page ${page + 1} / ${totalPages}` })
                     .setTimestamp();
             };
 
@@ -87,6 +88,11 @@ module.exports = {
                         .setLabel('◀')
                         .setStyle(ButtonStyle.Secondary)
                         .setDisabled(currentPage === 0),
+
+                    new ButtonBuilder()
+                        .setCustomId('jump')
+                        .setLabel('✱')
+                        .setStyle(ButtonStyle.Secondary),
 
                     new ButtonBuilder()
                         .setCustomId('next')
@@ -112,11 +118,30 @@ module.exports = {
             });
 
             collector.on('collect', async i => {
+
                 if (i.user.id !== interaction.user.id) {
                     return i.reply({
                         content: "❌ Tu ne peux pas utiliser ces boutons.",
                         ephemeral: true
                     });
+                }
+
+                if (i.customId === 'jump') {
+
+                    const modal = new ModalBuilder()
+                        .setCustomId('jumpModal')
+                        .setTitle('Aller à une page');
+
+                    const input = new TextInputBuilder()
+                        .setCustomId('pageInput')
+                        .setLabel(`Entre un numéro (1 - ${totalPages})`)
+                        .setStyle(TextInputStyle.Short)
+                        .setRequired(true);
+
+                    const row = new ActionRowBuilder().addComponents(input);
+                    modal.addComponents(row);
+
+                    return i.showModal(modal);
                 }
 
                 switch (i.customId) {
@@ -140,10 +165,27 @@ module.exports = {
                 });
             });
 
-            collector.on('end', async () => {
-                const disabledRow = createButtons();
-                disabledRow.components.forEach(button => button.setDisabled(true));
-                await message.edit({ components: [disabledRow] }).catch(() => {});
+            // Gestion du modal
+            interaction.client.on('interactionCreate', async modalInt => {
+                if (!modalInt.isModalSubmit()) return;
+                if (modalInt.customId !== 'jumpModal') return;
+                if (modalInt.user.id !== interaction.user.id) return;
+
+                const page = parseInt(modalInt.fields.getTextInputValue('pageInput'));
+
+                if (isNaN(page) || page < 1 || page > totalPages) {
+                    return modalInt.reply({
+                        content: `❌ Page invalide. (1 - ${totalPages})`,
+                        ephemeral: true
+                    });
+                }
+
+                currentPage = page - 1;
+
+                await modalInt.update({
+                    embeds: [await generateEmbed(currentPage)],
+                    components: [createButtons()]
+                });
             });
 
         } catch (error) {
