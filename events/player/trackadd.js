@@ -2,11 +2,11 @@ const { EmbedBuilder } = require('discord.js');
 
 
 module.exports = {
-    name: "playerStart",
+    name: "trackAdd",
     execute: async (queue, track) => {
         const embed = new EmbedBuilder()
-            .setTitle("Now playing")
-            .setDescription(`Now playing: ${track.title}`)
+            .setTitle("Track added")
+            .setDescription(`Track added: ${track.title}`)
             .setTimestamp()
         await queue.metadata.channel.send({ embeds: [embed] })
     }
