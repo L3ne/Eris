@@ -3,6 +3,9 @@ const fs = require('fs');
 const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js');
 const config = require('./config.json');
 
+const { Player } = require('discord-player');
+const { DefaultExtractors } = require('@discord-player/extractor');
+
 const client = new Client({
     intents: Object.values(GatewayIntentBits).slice(0, 22),
     partials: Object.values(Partials),
@@ -30,7 +33,9 @@ client.on('messageDelete', function (message) {
     });
 });
 
-// Importation des gestionnaires
+const player = new Player(client);
+client.player = player;
+
 var handlers = fs.readdirSync('./handlers');
 handlers = handlers.filter(f => f.endsWith('js') && !f.startsWith('-'));
 for (let i in handlers) {

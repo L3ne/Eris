@@ -31,18 +31,13 @@ module.exports = {
 
   execute: async(client, interaction) => {
 
-    const mentionable = interaction.options.getUser('userr');
+    const mentionable = interaction.options.getUser('user');
     const duration = interaction.options.getString('duration') ;
     const reason = interaction.options.getString('reason') || 'No reason provided';
 
-    const targetUser = await interaction.guild.members.fetch(mentionable);
+    const targetUser = await interaction.guild.members.fetch(mentionable.id);
     if (!targetUser) {
       await interaction.reply({content: "That user doesn't exist in this server.", ephemeral: true});
-      return;
-    }
-
-    if (targetUser.user.bot) {
-      await interaction.reply({content: "I can't timeout a bot.", ephemeral: true});
       return;
     }
 
