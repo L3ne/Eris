@@ -1,10 +1,16 @@
-const { EmbedBuilder } = require('discord.js');
+const { 
+    EmbedBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle 
+} = require('discord.js');
+
 const Level = require('../../../schemas/levelSchema');
 const XPUtils = require('../../../utils/xpUtils');
 
 module.exports = {
     name: 'leaderboard',
-    description: 'Affiche le classement des 10 meilleurs membres',
+    description: 'Affiche le classement des membres',
     type: 1,
     cooldown: 5000,
     options: [],
@@ -13,67 +19,137 @@ module.exports = {
         await interaction.deferReply();
 
         try {
-            const topUsers = await Level.find({
+            const users = await Level.find({
                 guildId: interaction.guild.id
-            })
-                .sort({ xp: -1 })
-                .limit(10);
+            }).sort({ xp: -1 });
 
-            if (!topUsers.length) {
+            if (!users.length) {
                 return interaction.editReply({
-                    embeds: [
-                        new EmbedBuilder()
-                            .setColor('#FF6B6B')
-                            .setTitle('🏆 Classement du serveur')
-                            .setDescription('Aucun membre n\'a encore gagné d\'XP.')
-                            .setTimestamp()
-                    ]
+                    content: "Aucun membre n'a encore gagné d'XP."
                 });
             }
 
-            let leaderboard = '';
-            let rank = 1;
+            const membersPerPage = 10;
+            let currentPage = 0;
+            const totalPages = Math.ceil(users.length / membersPerPage);
 
-            for (const userData of topUsers) {
-                const member = await interaction.guild.members
-                    .fetch(userData.userId)
-                    .catch(() => null);
+            const generateEmbed = async (page) => {
+                const start = page * membersPerPage;
+                const end = start + membersPerPage;
+                const currentUsers = users.slice(start, end);
 
-                if (!member) continue;
+                let leaderboard = '';
+                let rank = start + 1;
 
-                const xpInfo = XPUtils.formatXP(userData.xp, userData.level);
+                for (const userData of currentUsers) {
+                    const member = await interaction.guild.members
+                        .fetch(userData.userId)
+                        .catch(() => null);
 
-                const medal =
-                    rank === 1 ? '🥇' :
-                    rank === 2 ? '🥈' :
-                    rank === 3 ? '🥉' :
-                    `\`${rank}.\``;
+                    if (!member) continue;
 
-                leaderboard += `${medal} <@${member.user.id}>\n`;
-                leaderboard += `> Niveau **${userData.level}** • ${userData.xp.toLocaleString()} XP\n`;
-                leaderboard += `> Progression: **${xpInfo.progress.toFixed(1)}%** vers niveau ${userData.level + 1}\n\n`;
+                    const xpInfo = XPUtils.formatXP(userData.xp, userData.level);
 
-                rank++;
-            }
+                    const medal =
+                        rank === 1 ? '🥇' :
+                        rank === 2 ? '🥈' :
+                        rank === 3 ? '🥉' :
+                        `\`${rank}.\``;
 
-            const embed = new EmbedBuilder()
-                .setColor('#FFD700')
-                .setTitle(`🏆 Classement de ${interaction.guild.name}`)
-                .setDescription(leaderboard || 'Aucun membre valide trouvé.')
-                .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
-                .setFooter({
-                    text: `Demandé par ${interaction.user.username}`,
-                    iconURL: interaction.user.displayAvatarURL({ dynamic: true })
-                })
-                .setTimestamp();
+                    leaderboard += `${medal} <@${member.user.id}>\n`;
+                    leaderboard += `> Niveau **${userData.level}** • ${userData.xp.toLocaleString()} XP\n`;
+                    leaderboard += `> Progression: **${xpInfo.progress.toFixed(1)}%** vers niveau ${userData.level + 1}\n\n`;
 
-            return interaction.editReply({ embeds: [embed] });
+                    rank++;
+                }
+
+                return new EmbedBuilder()
+                    .setColor('#FFD700')
+                    .setTitle(`🏆 Classement de ${interaction.guild.name}`)
+                    .setDescription(leaderboard || 'Aucun membre valide trouvé.')
+                    .setThumbnail(interaction.guild.iconURL({ dynamic: true }))
+                    .setFooter({
+                        text: `Page ${page + 1} / ${totalPages}`
+                    })
+                    .setTimestamp();
+            };
+
+            const createButtons = () => {
+                return new ActionRowBuilder().addComponents(
+                    new ButtonBuilder()
+                        .setCustomId('first')
+                        .setLabel('⏮')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(currentPage === 0),
+
+                    new ButtonBuilder()
+                        .setCustomId('prev')
+                        .setLabel('◀')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(currentPage === 0),
+
+                    new ButtonBuilder()
+                        .setCustomId('next')
+                        .setLabel('▶')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(currentPage === totalPages - 1),
+
+                    new ButtonBuilder()
+                        .setCustomId('last')
+                        .setLabel('⏭')
+                        .setStyle(ButtonStyle.Secondary)
+                        .setDisabled(currentPage === totalPages - 1)
+                );
+            };
+
+            const message = await interaction.editReply({
+                embeds: [await generateEmbed(currentPage)],
+                components: [createButtons()]
+            });
+
+            const collector = message.createMessageComponentCollector({
+                time: 120000
+            });
+
+            collector.on('collect', async i => {
+                if (i.user.id !== interaction.user.id) {
+                    return i.reply({
+                        content: "❌ Tu ne peux pas utiliser ces boutons.",
+                        ephemeral: true
+                    });
+                }
+
+                switch (i.customId) {
+                    case 'first':
+                        currentPage = 0;
+                        break;
+                    case 'prev':
+                        currentPage--;
+                        break;
+                    case 'next':
+                        currentPage++;
+                        break;
+                    case 'last':
+                        currentPage = totalPages - 1;
+                        break;
+                }
+
+                await i.update({
+                    embeds: [await generateEmbed(currentPage)],
+                    components: [createButtons()]
+                });
+            });
+
+            collector.on('end', async () => {
+                const disabledRow = createButtons();
+                disabledRow.components.forEach(button => button.setDisabled(true));
+                await message.edit({ components: [disabledRow] }).catch(() => {});
+            });
 
         } catch (error) {
-            console.error('Erreur leaderboard:', error);
-
+            console.error(error);
             return interaction.editReply({
-                content: '❌ Une erreur est survenue lors de l\'affichage du classement.'
+                content: "❌ Une erreur est survenue."
             });
         }
     }
