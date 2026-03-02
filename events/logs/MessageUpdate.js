@@ -28,7 +28,7 @@ module.exports = {
                 { name: 'Edited Message', value: newMessage.content || 'No edited text', inline: false }
             )
             .addFields({ name: 'Jump to Message', value: `[Click here to jump to the message](${messageLink})`, inline: false })
-            .setThumbnail(oldMessage.author.displayAvatarURL())
+            .setThumbnail(oldMessage.author?.displayAvatarURL() || null)
             .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
             .setTimestamp();
 

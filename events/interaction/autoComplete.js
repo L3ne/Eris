@@ -1,7 +1,7 @@
-const { InteractionType } = require('discord.js');
+const { InteractionType, Events } = require('discord.js');
 
 module.exports = {
-    name: "interactionCreate",
+    name: Events.InteractionCreate,
     execute: async (client, interaction) => {
         if(interaction.type !== InteractionType.ApplicationCommandAutocomplete) return;
 

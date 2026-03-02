@@ -11,10 +11,9 @@ module.exports = {
     const logChannel = client.channels.cache.get(logSettings.logChannels.boost.channelId);
     if (!logChannel) return;
 
-    // Si un membre arrête de booster le serveur
     if (oldMember.premiumSince && !newMember.premiumSince) {
       const UnboostEmbed = new EmbedBuilder()
-        .setColor(0xF54242) // Couleur pour l'unboost
+        .setColor(0xF54242)
         .setThumbnail(newMember.user.displayAvatarURL({ dynamic: true }))
         .setAuthor({ name: `${newMember.user.tag}`, iconURL: newMember.user.avatarURL({ dynamic: true }) })
         .setDescription(`<@${newMember.user.id}> a arrêté de booster le serveur.`)

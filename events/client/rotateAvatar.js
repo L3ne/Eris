@@ -1,9 +1,10 @@
 const gradient = require('gradient-string');
 const fs = require('fs');
 const path = require('path');
+const { Events } = require('discord.js');
 
 module.exports = {
-    name: 'clientReady',
+    name: Events.ClientReady,
     once: true,
     execute: async (client) => {
         client.avatarRotation = true;

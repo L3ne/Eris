@@ -37,15 +37,8 @@ module.exports = {
         const user = interaction.options.getUser("user");
         const reason = interaction.options.getString("raisons") || 'Pas de raison donnée.';
 
-        // Récupérer le membre à partir de l'utilisateur pour accéder à ses rôles
         const targetUser = interaction.guild.members.cache.get(user.id);
 
-        // Vérifier si le bot a les permissions nécessaires pour kick des membres
-        if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.KickMembers)) {
-            return interaction.reply("Je n'ai pas la permission de kick des membres.");
-        }
-
-        // Vérification des rôles
         const targetUserRolePosition = targetUser.roles.highest.position;
         const requestUserRolePosition = interaction.member.roles.highest.position;
         const botRolePosition = interaction.guild.members.me.roles.highest.position;
@@ -94,7 +87,6 @@ module.exports = {
 
             if (i.customId === "confirmkick") {
                 try {
-                    // Envoyer un message privé à l'utilisateur avant de le kick
                     await user.send(`Vous avez été expulsé du serveur **${interaction.guild.name}** pour la raison suivante : ${reason}.`);
                 } catch (error) {
                     console.error(`Impossible d'envoyer un MP à ${user.tag}: ${error}`);

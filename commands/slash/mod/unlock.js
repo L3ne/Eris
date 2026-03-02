@@ -5,7 +5,7 @@ const {
 
 module.exports = {
     name: "unlock",
-    description: "Unlock a channel.",
+    description: "Déverrouille un channel.",
     type: ApplicationCommandType.ChatInput,
     default_member_permissions: ['ManageChannels'],
     user_perms: ['ManageChannels'],

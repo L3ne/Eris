@@ -3,7 +3,7 @@ const { ApplicationCommandType, ApplicationCommandOptionType } = require('discor
 
 module.exports = {
     name: 'skip',
-    description: 'Skip the current song',
+    description: 'Passe la musique en cours de lecture.',
     type: ApplicationCommandType.ChatInput,
     /**
      * @param {Client} client

@@ -22,10 +22,6 @@ module.exports = {
     },
   ],
 
-  /**
-   * @param {Client} client
-   * @param {Interaction} interaction
-   */
   execute: async (client, interaction) => {
     const mentionable = interaction.options.getUser('user');
     const reason = interaction.options.getString('reason') || 'No reason provided';

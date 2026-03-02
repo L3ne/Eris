@@ -1,5 +1,3 @@
-const { EmbedBuilder } = require("discord.js");
-
 module.exports = {
     name: 'avatar',
     description: 'Montre l\'avatar d\'un utilisateur.',

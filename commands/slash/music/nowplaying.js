@@ -3,7 +3,7 @@ const { useQueue } = require('discord-player');
 
 module.exports = {
     name: "nowplaying",
-    description: "Remove a specified amount of messages in a given channel",
+    description: "Affiche la musique en cours de lecture.",
 
      execute: async (client, interaction, args) => {
 

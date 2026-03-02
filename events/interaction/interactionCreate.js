@@ -1,10 +1,10 @@
-const { EmbedBuilder, Collection, PermissionsBitField, InteractionType, MessageFlags } = require('discord.js');
+const { EmbedBuilder, Collection, PermissionsBitField, InteractionType, MessageFlags, Events } = require('discord.js');
 const ms = require('ms')
 const config = require('../../config.json')
 const cooldowns = new Collection();
 
 module.exports = {
-    name: "interactionCreate",
+    name: Events.InteractionCreate,
     execute: async(client, interaction) => {
         if(interaction.type !== InteractionType.ApplicationCommand) return;
 
@@ -22,8 +22,9 @@ module.exports = {
         }
 
         try {
-            // Vérifier si l'utilisateur est owner du bot
+            // Vérifier si l'utilisateur est owner du bot ou whitelist
             const isOwner = interaction.user.id === config.ownerID;
+            const isWhitelisted = client.whitelistManager ? client.whitelistManager.isWhitelisted(interaction.user.id) : false;
 
             if(command.cooldown && cooldowns.has(`${interaction.user.id}|${command.commandName}`)) 
                 return interaction.reply({ content: `You are on a **${ms(cooldowns.get(`${interaction.user.id}|${command.commandName}`) - Date.now(), {long : true})}** cooldown.` })
@@ -34,7 +35,7 @@ module.exports = {
                     return interaction.reply({ content: `This command can only be used in a server.`, flags: MessageFlags.Ephemeral });
                 }
                 
-                if(!isOwner && !interaction.member.permissions.has(PermissionsBitField.resolve(command.user_perms || []))) 
+                if(!isOwner && !isWhitelisted && !interaction.member.permissions.has(PermissionsBitField.resolve(command.user_perms || []))) 
                     return interaction.reply({ content: `You don't have the required permissions to run this command.`, flags: MessageFlags.Ephemeral })
                 if(!interaction.guild.members.cache.get(client.user.id).permissions.has(PermissionsBitField.resolve(command.bot_perms || []))) 
                     return interaction.reply({ content: `The bot doesn't have the required permissions to run this command.`, flags: MessageFlags.Ephemeral })

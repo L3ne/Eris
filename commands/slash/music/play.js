@@ -3,12 +3,12 @@ const { ApplicationCommandType, ApplicationCommandOptionType, EmbedBuilder } = r
 
 module.exports = {
     name: 'play',
-    description: 'Play a song',
+    description: 'Joue une musique.',
     type: ApplicationCommandType.ChatInput,
     options: [
             {
                 name: "song",
-                description: "Song name or URL to play",
+                description: "Nom ou URL de la musique à jouer",
                 type: ApplicationCommandOptionType.String,
                 required: true,
                 autocomplete: true

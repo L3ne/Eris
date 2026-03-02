@@ -1,5 +1,7 @@
+const { Events } = require('discord.js');
+
 module.exports = {
-    name: "interactionCreate",
+    name: Events.InteractionCreate,
     execute: async (client, interaction) => {
         if(interaction.isModalSubmit()) {
             const modal = client.modals.get(interaction.customId)

@@ -1,9 +1,10 @@
 const AsciiTable = require('ascii-table/ascii-table');
 require('dotenv').config()
 var colors = require('colors');
-const { ActivityType } = require('discord.js');
+const { ActivityType, Events } = require('discord.js');
 const mongoose = require('mongoose');
 const gradient = require('gradient-string');
+const WhitelistManager = require('../../utils/whitelist');
 let join = (cmd, prefix) => {
     if(!cmd) return ' '
     return `${prefix}${cmd}`
@@ -19,7 +20,7 @@ let ascii = `             ,\\
        \`-----\` \`--\`      `
 
 module.exports = {
-    name: "clientReady",
+    name: Events.ClientReady,
     execute: async (client) => {
         let table = new AsciiTable()
         table.setBorder(['│'], ['─'])
@@ -44,6 +45,8 @@ module.exports = {
         mongoose.connect(process.env.MONGOURL, {
         }).then(() => {
             console.log(gradient.rainbow('Connected to MongoDB'));
+            // Initialize whitelist after MongoDB is connected
+            client.whitelistManager = new WhitelistManager();
         }).catch(err => {
             console.error('Failed to connect to MongoDB', err);
         });

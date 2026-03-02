@@ -1,11 +1,12 @@
 const { EmbedBuilder, Events } = require('discord.js');
-const LogSettings = require('../../schemas/logsSchema');
+const logsSchema = require('../../schemas/logsSchema');
+
 module.exports = {
   name: Events.GuildMemberUpdate,
   async execute(client, oldMember, newMember) {
       
-    const logSettings = await LogSettings.findOne({ guildId: oldMember.guild.id });
-    if (!logSettings || !logSettings.logChannels.boost || !logSettings.logChannels.boost.enabled) return;
+    const logSettings = await logsSchema.findOne({ guildId: oldMember.guild.id });
+    if (!logSettings || !logSettings.logChannels.boost.enabled) return;
 
     const logChannel = client.channels.cache.get(logSettings.logChannels.boost.channelId);
     if (!logChannel) return;

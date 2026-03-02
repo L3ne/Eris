@@ -1,17 +1,17 @@
 const gradient = require('gradient-string');
+const { DefaultExtractors } = require('@discord-player/extractor');
 
 module.exports = {
     name: "ready",
     execute: async (client) => {
-        client.player = player;
 
  try {
     const { YoutubeSabrExtractor } = await import('discord-player-googlevideo');
     const { SpotifyExtractor } = await import("discord-player-spotify");
-    await player.extractors.register(YoutubeSabrExtractor, {});
-    await player.extractors.register(SpotifyExtractor, {});
-    await player.extractors.loadMulti(DefaultExtractors);
-    console.log(gradient('blue', 'cyan')('Extractors loaded. Bot is ready.'));
+    await client.player.extractors.register(YoutubeSabrExtractor, {});
+    await client.player.extractors.register(SpotifyExtractor, {});
+    await client.player.extractors.loadMulti(DefaultExtractors);
+    console.log(gradient('blue', 'cyan')('Systeme de musique initialisé avec succès!'));
   } catch (error) {
     console.error('FATAL: Failed to load extractors:', error);
     process.exit(1);

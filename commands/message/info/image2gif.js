@@ -11,17 +11,14 @@ module.exports = {
     user_perms: [],
     bot_perms: ["AttachFiles"],
     execute: async (client, message, args) => {
-        // Vérifier si une image est attachée au message
         if (message.attachments.size === 0) {
             return message.reply({
                 content: 'Veuillez fournir une image en pièce jointe.\n\n**Utilisation:** `!image2gif` (avec une image en pièce jointe)'
             });
         }
 
-        // Récupérer la première pièce jointe
         const attachment = message.attachments.first();
 
-        // Vérifier si c'est une image
         if (!attachment.contentType || !attachment.contentType.startsWith('image/')) {
             return message.reply({
                 content: 'Veuillez fournir une image valide (PNG, JPG, JPEG, WEBP, etc.)'
@@ -37,16 +34,13 @@ module.exports = {
 
             const outputPath = path.join(tempDir, `gif_${Date.now()}_${message.author.id}.gif`);
 
-            // Télécharger et convertir l'image en GIF
             const response = await fetch(attachment.url);
             const buffer = await response.arrayBuffer();
             
-            // Convertir directement en GIF avec Sharp
             await sharp(Buffer.from(buffer))
                 .gif()
                 .toFile(outputPath);
 
-            // Envoyer le GIF
             const gifAttachment = new AttachmentBuilder(outputPath, {
                 name: `converted_${Date.now()}.gif`
             });
@@ -55,7 +49,6 @@ module.exports = {
                 files: [gifAttachment]
             });
 
-            // Nettoyer le fichier temporaire après 1 minute
             setTimeout(() => {
                 try {
                     if (fs.existsSync(outputPath)) fs.unlinkSync(outputPath);

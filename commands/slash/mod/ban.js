@@ -37,12 +37,6 @@ module.exports = {
         const user = interaction.options.getUser("user");
         const reason = interaction.options.getString("raisons") || 'Pas de raison donnée.';
 
-        // Vérifier si le bot a les permissions nécessaires pour bannir des membres
-        if (!interaction.guild.members.me.permissions.has(PermissionsBitField.Flags.BanMembers)) {
-            return interaction.reply("Je n'ai pas la permission de bannir des membres.");
-        }
-
-        // Vérification des rôles
         const targetMember = interaction.guild.members.cache.get(user.id);
 
 		if (!targetMember) {
@@ -52,7 +46,6 @@ module.exports = {
     		});
 		}
 
-// Vérification des rôles
 const targetUserRolePosition = targetMember.roles.highest.position;
 const requestUserRolePosition = interaction.member.roles.highest.position;
 const botRolePosition = interaction.guild.members.me.roles.highest.position;
@@ -101,7 +94,6 @@ if (targetUserRolePosition >= botRolePosition) {
 
             if (i.customId === "confirmban") {
                 try {
-                    // Envoyer un message privé à l'utilisateur avant de le bannir
                     await user.send(`Vous avez été banni du serveur **${interaction.guild.name}** pour la raison suivante : ${reason}.`);
                 } catch (error) {
                     console.error(`Impossible d'envoyer un MP à ${user.tag}: ${error}`);

@@ -1,14 +1,8 @@
-const { EmbedBuilder, Events, ButtonStyle, ActionRowBuilder, AuditLogEvent, ButtonBuilder } = require("discord.js");
+const { EmbedBuilder, Events, AuditLogEvent } = require("discord.js");
 const LogSettings = require('../../schemas/logsSchema');
 
 module.exports = {
   name: Events.GuildMemberRemove,
-
-  /**
-   * @param {GuildMember} member 
-   * @param {Client} client 
-   */
-
 
 async execute (client, member)  {
 

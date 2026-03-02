@@ -1,11 +1,11 @@
-const { EmbedBuilder, Collection, PermissionFlagsBits } = require('discord.js');
+const { EmbedBuilder, Collection, PermissionFlagsBits, Events } = require('discord.js');
 const ms = require('ms')
 const config = require('../../config.json')
 
 const cooldowns = new Collection();
 
 module.exports = {
-    name: "messageCreate",
+    name: Events.MessageCreate,
     execute: async (client, message) => {
         if(message.author.bot) return;
         if(!message.content.startsWith(client.config.prefix)) return;

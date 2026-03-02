@@ -1,8 +1,10 @@
 const { EmbedBuilder, Events } = require('discord.js');
 const LogSettings = require('../../schemas/logsSchema');
+
 module.exports = {
   name: Events.VoiceStateUpdate,
   async execute(client, oldState, newState) {
+    
     const member = newState.member;
     const channel = newState.channel;
     

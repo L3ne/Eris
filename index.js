@@ -4,7 +4,6 @@ const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js'
 const config = require('./config.json');
 
 const { Player } = require('discord-player');
-const { DefaultExtractors } = require('@discord-player/extractor');
 
 const client = new Client({
     intents: Object.values(GatewayIntentBits).slice(0, 22),
@@ -58,5 +57,5 @@ process.on('uncaughtExceptionMonitor', (err) => {
 });
 
 (async () => {
-    client.login(process.env.TOKEN);
+    await client.login(process.env.TOKEN);
 })();

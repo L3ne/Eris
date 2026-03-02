@@ -13,7 +13,6 @@ module.exports = {
     const logChannel = client.channels.cache.get(logSettings.logChannels.voice.channelId);
     if (!logChannel) return;
 
-    // Si un membre quitte un canal vocal
     if (oldState.channelId && !newState.channelId) {
       const VoiceChannelLeave = new EmbedBuilder()
         .setColor(client.color)
