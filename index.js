@@ -32,7 +32,13 @@ client.on('messageDelete', function (message) {
     });
 });
 
-const player = new Player(client);
+const player = new Player(client, {
+    ytdlOptions: {
+        filter: "audioonly",
+        quality: "highestaudio",
+        highWaterMark: 1 << 25
+    }
+});
 client.player = player;
 
 var handlers = fs.readdirSync('./handlers');

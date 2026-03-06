@@ -96,7 +96,7 @@ module.exports = {
 			// Create embed
 			const embed = new EmbedBuilder()
 				.setURL(track.url)
-				.setThumbnail(track.thumbnail)
+				.setThumbnail(track.thumbnail || null)
 				.setTitle(track.title)
 				.setDescription(`**${track.author}** • \`${track.duration}\``)
 				.addFields({
