@@ -1,6 +1,7 @@
 const { Events, EmbedBuilder } = require("discord.js");
 const Bump = require("../../schemas/bumpSchema");
 const XPUtils = require("../../utils/xpUtils");
+const levelSettingsSchema = require("../../schemas/levelSettingsSchema");
 
 const DISBOARD_ID = "302050872383242240";
 const BUMP_COOLDOWN = 2 * 60 * 60 * 1000;
@@ -20,6 +21,8 @@ module.exports = {
     if (!embed.description?.toLowerCase().includes("bump")) return;
 
     const bumper = message.interaction.user;
+
+    const levelSettings = await levelSettingsSchema.findOne({ guildId: message.guild.id });
 
     const data = await Bump.findOneAndUpdate(
       {
@@ -47,6 +50,13 @@ module.exports = {
       );
 
       if (result?.levelUp) {
+        const embed = new EmbedBuilder()
+          .setDescription(`🎉 Félicitations <@${bumper.id}> !
+Vous avez atteint le niveau ${result.newLevel} !`)
+          .setThumbnail(bumper.displayAvatarURL({ dynamic: true }))
+          .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
+          .setTimestamp();
+          await levelSettings.levelUpChannel.send({ embeds: [embed] });
         rewardMessage = `+300 XP\n🎉 Level up ${result.oldLevel} → ${result.newLevel}`;
       }
 
