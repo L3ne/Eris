@@ -3,8 +3,6 @@ const fs = require('fs');
 const { Client, Collection, GatewayIntentBits, Partials } = require('discord.js');
 const config = require('./config.json');
 
-const { Player } = require('discord-player');
-
 const client = new Client({
     intents: Object.values(GatewayIntentBits).slice(0, 22),
     partials: Object.values(Partials),
@@ -32,15 +30,6 @@ client.on('messageDelete', function (message) {
     });
 });
 
-const player = new Player(client, {
-    ytdlOptions: {
-        filter: "audioonly",
-        quality: "highestaudio",
-        highWaterMark: 1 << 25
-    }
-});
-client.player = player;
-
 var handlers = fs.readdirSync('./handlers');
 handlers = handlers.filter(f => f.endsWith('js') && !f.startsWith('-'));
 for (let i in handlers) {
@@ -49,6 +38,8 @@ for (let i in handlers) {
 }
 
 process.on("uncaughtException", (err) => {
+    const m = ["clientReady"];
+    if (m.includes(err.message)) return;
     console.log(err);
 });
 process.on('unhandledRejection', (reason, err) => {
@@ -59,6 +50,8 @@ process.on('unhandledRejection', (reason, err) => {
     console.log(reason, err);
 });
 process.on('uncaughtExceptionMonitor', (err) => {
+    const m = ["clientReady"];
+    if (m.includes(err.message)) return;
     console.log(err);
 });
 

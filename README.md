@@ -17,6 +17,7 @@ node index.js
 ## features
 
 - xp system
+- bump system
 - visual novels commands
 - moderation commands
 - logs system
