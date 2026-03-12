@@ -38,8 +38,6 @@ for (let i in handlers) {
 }
 
 process.on("uncaughtException", (err) => {
-    const m = ["clientReady"];
-    if (m.includes(err.message)) return;
     console.log(err);
 });
 process.on('unhandledRejection', (reason, err) => {
@@ -50,8 +48,6 @@ process.on('unhandledRejection', (reason, err) => {
     console.log(reason, err);
 });
 process.on('uncaughtExceptionMonitor', (err) => {
-    const m = ["clientReady"];
-    if (m.includes(err.message)) return;
     console.log(err);
 });
 

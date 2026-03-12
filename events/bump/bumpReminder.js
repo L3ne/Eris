@@ -59,6 +59,7 @@ module.exports = {
     const bumpEmbed = new EmbedBuilder()
       .setColor(client.color)
       .setTitle("Bump réussi")
+      .setThumbnail(bumper.displayAvatarURL())
       .setDescription(`${bumper} merci pour le bump !`)
       .addFields(
         {

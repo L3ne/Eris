@@ -1,5 +1,5 @@
 const WhitelistModel = require('../schemas/whitelist');
-
+const gradient = require('gradient-string');
 class WhitelistManager {
     constructor() {
         this.cache = new Set();
@@ -10,7 +10,7 @@ class WhitelistManager {
         try {
             const whitelistedUsers = await WhitelistModel.find({});
             this.cache = new Set(whitelistedUsers.map(user => user.userId));
-            console.log(`Loaded ${this.cache.size} users from whitelist`);
+            console.log(gradient('cyan', 'blue')(`System whitelist loaded with ${this.cache.size} users!`));
         } catch (error) {
             console.error('Error loading whitelist from MongoDB:', error);
             this.cache = new Set();

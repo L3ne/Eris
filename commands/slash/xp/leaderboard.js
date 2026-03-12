@@ -165,6 +165,19 @@ module.exports = {
                 });
             });
 
+            collector.on('end', () => {
+
+                const disabledRow = createButtons();
+
+                disabledRow.components.forEach(button => {
+                    button.setDisabled(true);
+                });
+
+                message.edit({
+                    components: [disabledRow]
+                }).catch(() => {});
+        });
+
             // Gestion du modal
             interaction.client.on('interactionCreate', async modalInt => {
                 if (!modalInt.isModalSubmit()) return;
