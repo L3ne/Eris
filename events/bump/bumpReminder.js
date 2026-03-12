@@ -57,7 +57,6 @@ Vous avez atteint le niveau ${result.newLevel} !`)
           .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
           .setTimestamp();
           await levelSettings.levelUpChannel.send({ embeds: [embed] });
-        rewardMessage = `+300 XP\n🎉 Level up ${result.oldLevel} → ${result.newLevel}`;
       }
 
     } catch (err) {
@@ -85,7 +84,7 @@ Vous avez atteint le niveau ${result.newLevel} !`)
         {
           name: "Prochain bump",
           value: `<t:${nextBump}:R>`,
-          inline: false
+          inline: true
         }
       )
       .setTimestamp()
