@@ -51,12 +51,11 @@ module.exports = {
 
       if (result?.levelUp) {
         const embed = new EmbedBuilder()
-          .setDescription(`🎉 Félicitations <@${bumper.id}> !
-Vous avez atteint le niveau ${result.newLevel} !`)
+          .setDescription(`🎉 Félicitations <@${bumper.id}> !\nVous avez atteint le niveau ${result.newLevel} !`)
           .setThumbnail(bumper.displayAvatarURL({ dynamic: true }))
           .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
           .setTimestamp();
-          await levelSettings.levelUpChannel.send({ embeds: [embed] });
+        await levelSettings.levelUpChannel.send({ embeds: [embed] });
       }
 
     } catch (err) {
