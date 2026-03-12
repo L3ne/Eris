@@ -128,7 +128,7 @@ async function handleList(interaction, client) {
 
     const userDetails = whitelistedUsers.map(user => {
         const addedDate = new Date(user.addedAt).toLocaleDateString();
-        return `• **${user.username || 'Unknown User'}** (\`${user.userId}\`) - Added: ${addedDate}`;
+        return `• **<@${user.userId}>** (\`${user.userId}\`) - Added: ${addedDate}`;
     });
 
     const embed = new EmbedBuilder()
