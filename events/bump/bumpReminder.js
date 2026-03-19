@@ -55,7 +55,8 @@ module.exports = {
           .setThumbnail(bumper.displayAvatarURL({ dynamic: true }))
           .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
           .setTimestamp();
-        await levelSettings.levelUpChannel.send({ embeds: [embed] });
+        const channel = message.guild.channels.cache.get(levelSettings.levelUpChannel);
+        await channel.send({ embeds: [embed] });
       }
 
     } catch (err) {
