@@ -10,7 +10,7 @@ const {
 
 
 module.exports = {
-    name: "embed-builder",
+    name: "embed",
     description: "Create custom embeds",
     type: ApplicationCommandType.ChatInput,
     default_member_permissions: ['Administrator'],

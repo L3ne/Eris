@@ -41,7 +41,8 @@ module.exports = {
         interaction.channel.bulkDelete(messages).then(({ size }) => {
         
         const success = new EmbedBuilder()
-        .setTitle('SUCCESS')
+        .setTitle('Success')
+        .setColor(client.color)
         .setDescription(size ? `${size} message${size > 1 ? 's' : ''} ${member ? `de ${member} ` : ''}${size > 1 ? 'ont été supprimés' : 'a été supprimé'}.` : 'Je n\'ai pas pu supprimer de message.')
             interaction.reply({
                 embeds: [success],
@@ -51,7 +52,7 @@ module.exports = {
         .catch(() => {
 
         const error = new EmbedBuilder()
-        .setTitle('ERROR')
+        .setTitle('Error')
         .setDescription('Je n\'ai pas pu supprimer de message.')
             interaction.reply({
                 embeds: [error],

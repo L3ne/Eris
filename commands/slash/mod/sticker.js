@@ -40,7 +40,7 @@ module.exports = {
                 file: sticker.url
             })
 
-            await interaction.editReply(`<a:check_mark:1115529708273152083> Le stiker avec le nom **${newSticker.name}** à été crée!`)
+            await interaction.editReply(`Le stiker avec le nom **${newSticker.name}** à été crée!`)
         } catch (err) {
             console.log(err)
             await interaction.editReply(`Plus de place..`)
