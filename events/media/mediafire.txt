@@ -1,0 +1,68 @@
+const { Events, EmbedBuilder } = require("discord.js");
+const { mediafire } = require('ab-downloader');
+
+const MEDIAFIRE_REGEX = /https?:\/\/(www\.)?mediafire\.com\/file\/[\w-]+\/?/;
+
+module.exports = {
+  name: Events.MessageCreate,
+
+  async execute(client, message) {
+    if (message.author.bot) return;
+    if (!message.content) return;
+
+    const match = message.content.match(MEDIAFIRE_REGEX);
+    if (!match) return;
+
+    const url = match[0];
+
+    try {
+      await message.channel.sendTyping();
+
+      const data = await mediafire(url);
+      console.log(data);
+
+      if (!data || !data.result || !data.result.url || !data.result.status) {
+        return await message.reply({
+          content: '❌ Impossible de récupérer le lien de téléchargement MediaFire. Le lien est peut-être invalide.'
+        });
+      }
+
+      const downloadUrl = data.result.url;
+      const filename = data.result.filename || 'Fichier';
+
+      const embed = new EmbedBuilder()
+        .setColor(client.color || '#00ff00')
+        .setTitle('📁 MediaFire')
+        .addFields(
+          {
+            name: 'Fichier',
+            value: filename,
+            inline: true
+          },
+          {
+            name: 'Taille',
+            value: data.result.filesizeH || 'Inconnue',
+            inline: true
+          },
+          {
+            name: 'Type',
+            value: data.result.type || 'Inconnu',
+            inline: true
+          }
+        )
+        .setDescription(`[Télécharger le fichier](${downloadUrl})`)
+        .setTimestamp()
+        .setFooter({ text: `Envoyé par ${message.author.username}`, iconURL: message.author.displayAvatarURL() });
+
+      await message.reply({
+        embeds: [embed]
+      });
+
+    } catch (error) {
+      console.error('Erreur lors de la récupération MediaFire:', error);
+      await message.reply({
+        content: '❌ Une erreur est survenue lors de la récupération du fichier MediaFire. Veuillez réessayer.'
+      });
+    }
+  }
+};

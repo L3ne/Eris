@@ -1,4 +1,4 @@
-const { Events, EmbedBuilder } = require("discord.js");
+const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
 const Bump = require("../../schemas/bumpSchema");
 const XPUtils = require("../../utils/xpUtils");
 const levelSettingsSchema = require("../../schemas/levelSettingsSchema");
@@ -90,12 +90,41 @@ module.exports = {
       .setTimestamp()
       .setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL() });
 
-    message.channel.send({
-      embeds: [bumpEmbed]
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('bump_leaderboard')
+          .setLabel('Leaderboard')
+          .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder()
+          .setCustomId('bump_notify')
+          .setLabel('Notify Me')
+          .setStyle(ButtonStyle.Primary)
+      );
+
+    const bumpMessage = await message.channel.send({
+      embeds: [bumpEmbed],
+      components: [row]
     });
 
-    setTimeout(() => {
-      message.channel.send("🔔 Le bump est de nouveau disponible ! `/bump`");
+    setTimeout(async () => {
+      // Récupérer les utilisateurs qui veulent être notifiés
+      const notifications = await Bump.find({ guildId: message.guild.id, notify: true });
+      const notifyUsers = notifications.map(n => `<@${n.userId}>`).join(' ');
+      
+      const reminderMessage = notifyUsers 
+        ? `🔔 Le bump est de nouveau disponible ! ${notifyUsers} \`/bump\``
+        : `🔔 Le bump est de nouveau disponible ! \`/bump\``;
+      
+      message.channel.send(reminderMessage);
+
+      // Retirer les boutons du message de bump
+      await bumpMessage.edit({
+        components: []
+      });
+
+      // Nettoyer les notifications
+      await Bump.updateMany({ guildId: message.guild.id }, { notify: false });
     }, BUMP_COOLDOWN);
 
   }

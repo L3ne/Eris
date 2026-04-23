@@ -19,6 +19,11 @@ const bumpSchema = new Schema({
     lastBump: {
         type: Date,
         default: null
+    },
+
+    notify: {
+        type: Boolean,
+        default: false
     }
 
 }, { timestamps: true });
