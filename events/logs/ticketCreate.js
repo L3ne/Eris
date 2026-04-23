@@ -12,17 +12,18 @@ module.exports = async (client, ticket) => {
         const creator = await client.users.fetch(ticket.creatorId);
 
         const embed = new EmbedBuilder()
-            .setColor('#00ff00')
-            .setTitle('🎫 Ticket Créé')
-            .setDescription(`Un nouveau ticket a été créé`)
+            .setColor(client.color || '#00ff00')
+            .setTitle(`TICKET CREATED: "${ticket.ticketId}"`)
+            .setDescription(`Un nouveau ticket a été créé par ${creator}`)
             .addFields(
-                { name: 'ID du Ticket', value: ticket.ticketId, inline: true },
-                { name: 'Créateur', value: `${creator} (${creator.tag})`, inline: true },
-                { name: 'Raison', value: ticket.reason, inline: true },
+                { name: 'Ticket ID', value: `\`${ticket.ticketId}\``, inline: true },
+                { name: 'Creator', value: `${creator.tag} (\`${ticket.creatorId}\`)`, inline: true },
+                { name: 'Reason', value: ticket.reason, inline: true },
                 { name: 'Channel', value: `<#${ticket.channelId}>`, inline: true }
             )
             .setTimestamp()
-            .setFooter({ text: `ID: ${ticket.creatorId}` });
+            .setThumbnail(logChannel.guild.iconURL({ dynamic: true }) || null)
+            .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) });
 
         await logChannel.send({ embeds: [embed] });
     } catch (err) {

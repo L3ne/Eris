@@ -2,7 +2,7 @@ const { SlashCommandBuilder, EmbedBuilder, PermissionFlagsBits } = require('disc
 const LevelSettings = require('../../../schemas/levelSettingsSchema');
 
 module.exports = {
-    name: 'setxp',
+    name: 'xp',
     description: 'Configure les paramètres du système d\'XP',
     type: 1,
     cooldown: 2000,

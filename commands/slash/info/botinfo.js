@@ -23,7 +23,7 @@ module.exports = {
             const memoryUsagePercent = Math.round((usedMemory / totalMemory) * 100);
 
             const embed = new EmbedBuilder()
-                .setColor(client.color || '#0099ff')
+                .setColor(client.color)
                 .setTitle(`Informations de ${client.user.username}`)
                 .setThumbnail(client.user.displayAvatarURL({ dynamic: true, size: 256 }))
                 .addFields(

@@ -1,6 +1,10 @@
 const {
     ApplicationCommandOptionType,
-    ApplicationCommandType
+    ApplicationCommandType,
+    EmbedBuilder,
+    ActionRowBuilder,
+    ButtonBuilder,
+    ButtonStyle
 } = require("discord.js");
 const { createTicketPanel } = require("../../../utils/ticketUtils");
 
@@ -22,13 +26,26 @@ module.exports = {
     ],
 
     execute: async (client, interaction) => {
-        const channel = interaction.options.getChannel("channel") || interaction.channel;
+    const channel = interaction.options.getChannel("channel") || interaction.channel;
 
-        const { embed, components } = createTicketPanel(client);
+    const embed = new EmbedBuilder()
+        .setColor(client.color)
+        .setTitle('Ticket')
+        .setThumbnail(channel.guild.iconURL())
+        .setDescription('Pour créer un ticket réagissez avec 📩')
+        .setFooter({ text: '1 ticket inutile = 1 séance de méditation d\'1 heure gratuite' });
+
+    const row = new ActionRowBuilder()
+        .addComponents(
+            new ButtonBuilder()
+                .setCustomId('ticket_open')
+                .setLabel('📩')
+                .setStyle(ButtonStyle.Success)
+        );
 
         await channel.send({
             embeds: [embed],
-            components: components
+            components: [row]
         });
 
         await interaction.reply({

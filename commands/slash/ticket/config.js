@@ -1,7 +1,8 @@
 const {
     EmbedBuilder,
     ApplicationCommandOptionType,
-    ApplicationCommandType
+    ApplicationCommandType,
+    ChannelType
 } = require("discord.js");
 const { TicketConfig } = require("../../../utils/ticketUtils");
 
@@ -30,6 +31,7 @@ module.exports = {
             name: "category",
             description: "Catégorie pour les tickets",
             type: ApplicationCommandOptionType.Channel,
+            channel_types: [ChannelType.GuildCategory], // Only category channels
             required: false
         }
     ],

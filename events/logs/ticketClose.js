@@ -16,18 +16,19 @@ module.exports = async (client, ticket, closedBy) => {
         const durationStr = Math.floor(duration / 60000) + ' minutes';
 
         const embed = new EmbedBuilder()
-            .setColor('#ff0000')
-            .setTitle('🔒 Ticket Fermé')
-            .setDescription(`Le ticket a été fermé`)
+            .setColor(client.color || '#ff0000')
+            .setTitle(`TICKET CLOSED: "${ticket.ticketId}"`)
+            .setDescription(`Le ticket a été fermé par ${closer}`)
             .addFields(
-                { name: 'ID du Ticket', value: ticket.ticketId, inline: true },
-                { name: 'Créateur', value: `${creator} (${creator.tag})`, inline: true },
-                { name: 'Fermé par', value: `${closer} (${closer.tag})`, inline: true },
-                { name: 'Raison', value: ticket.reason, inline: true },
-                { name: 'Durée', value: durationStr, inline: true }
+                { name: 'Ticket ID', value: `\`${ticket.ticketId}\``, inline: true },
+                { name: 'Creator', value: `${creator.tag} (\`${ticket.creatorId}\`)`, inline: true },
+                { name: 'Closed by', value: `${closer.tag} (\`${closedBy}\`)`, inline: true },
+                { name: 'Reason', value: ticket.reason, inline: true },
+                { name: 'Duration', value: durationStr, inline: true }
             )
             .setTimestamp()
-            .setFooter({ text: `ID: ${closedBy}` });
+            .setThumbnail(logChannel.guild.iconURL({ dynamic: true }) || null)
+            .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) });
 
         await logChannel.send({ embeds: [embed] });
     } catch (err) {

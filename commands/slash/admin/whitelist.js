@@ -86,7 +86,7 @@ async function handleAdd(interaction, client) {
             { name: 'User ID', value: user.id, inline: true },
             { name: 'Total Whitelisted', value: client.whitelistManager.getWhitelistSize().toString(), inline: true }
         )
-        .setColor(result.success ? '#00ff00' : '#ffaa00')
+        .setColor(client.color)
         .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });
@@ -107,7 +107,7 @@ async function handleRemove(interaction, client) {
             { name: 'User ID', value: user.id, inline: true },
             { name: 'Total Whitelisted', value: client.whitelistManager.getWhitelistSize().toString(), inline: true }
         )
-        .setColor(result.success ? '#00ff00' : '#ffaa00')
+        .setColor(client.color)
         .setTimestamp();
 
     await interaction.reply({ embeds: [embed] });

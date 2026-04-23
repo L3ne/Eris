@@ -424,39 +424,11 @@ async function sendTranscript(client, channelId, guildId) {
     }
 }
 
-/**
- * Crée le panel de création de tickets
- * @param {Client} client - Le client Discord
- * @returns {Object} - L'embed et les composants du panel
- */
-function createTicketPanel(client) {
-    const embed = new EmbedBuilder()
-        .setColor(client.color || '#00ff00')
-        .setTitle('🎫 Système de Tickets')
-        .setDescription('Cliquez sur le bouton ci-dessous pour créer un ticket.')
-        .setTimestamp()
-        .setFooter({ text: 'Système de Tickets Avancé' });
-
-    const row = new ActionRowBuilder()
-        .addComponents(
-            new ButtonBuilder()
-                .setCustomId('ticket_open')
-                .setLabel('🎫 Créer un ticket')
-                .setStyle(ButtonStyle.Success)
-        );
-
-    return {
-        embed: embed,
-        components: [row]
-    };
-}
-
 module.exports = {
     createTicket,
     closeTicket,
     addMemberToTicket,
     removeMemberFromTicket,
     generateTranscript,
-    sendTranscript,
-    createTicketPanel
+    sendTranscript
 };

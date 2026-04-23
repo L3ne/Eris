@@ -25,14 +25,15 @@ module.exports = {
         message.error = (text) => message.return(text, '#fc3c35')
         
         if(command) {
-            // Vérifier si l'utilisateur est owner du bot
+            // Vérifier si l'utilisateur est owner du bot ou whitelist
             const isOwner = message.author.id === config.ownerID;
-            
+            const isWhitelisted = client.whitelistManager ? client.whitelistManager.isWhitelisted(message.author.id) : false;
+
             if(command.cooldown && cooldowns.has(`${message.author.id}|${command.name}`)) 
                 return message.error(`You are on a **${ms(cooldowns.get(`${message.author.id}|${command.name}`) - Date.now(), {long : true})}** cooldown.`)
             
             if(command.user_perms || command.bot_perms) {
-                if(!isOwner && !message.member.permissions.has(PermissionFlagsBits[command.user_perms || []])) 
+                if(!isOwner && !isWhitelisted && !message.member.permissions.has(PermissionFlagsBits[command.user_perms || []])) 
                 return message.error(`You don't have the required permissions to run this command.`)
                 if(!message.guild.members.cache.get(client.user.id).permissions.has(PermissionFlagsBits[command.bot_perms || []])) 
                 return message.error(`The bot doesn't have the required permissions to run this command.`)
