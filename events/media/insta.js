@@ -3,9 +3,6 @@ const { igdl } = require("ab-downloader");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
-const { REPL_MODE_STRICT } = require("repl");
-const { user } = require("osu-api-extended/dist/api/v2");
-const { resolvePartialEmoji } = require("discord.js");
 
 const INSTAGRAM_REGEX =
   /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+\/?/;

@@ -108,11 +108,17 @@ module.exports = {
     });
 
     setTimeout(async () => {
-      // Récupérer les utilisateurs qui veulent être notifiés
-      const notifications = await Bump.find({ guildId: message.guild.id, notify: true });
-      const notifyUsers = notifications.map(n => `<@${n.userId}>`).join(' ');
+      // Récupérer le document du serveur pour les notifications
+      const serverData = await Bump.findOne({
+        guildId: message.guild.id,
+        userId: message.guild.id
+      });
+
+      const notifyUsers = serverData && serverData.notifyUsers.length > 0
+        ? serverData.notifyUsers.map(id => `<@${id}>`).join(' ')
+        : '';
       
-      const reminderMessage = notifyUsers 
+      const reminderMessage = notifyUsers
         ? `🔔 Le bump est de nouveau disponible ! ${notifyUsers} \`/bump\``
         : `🔔 Le bump est de nouveau disponible ! \`/bump\``;
       
@@ -124,7 +130,10 @@ module.exports = {
       });
 
       // Nettoyer les notifications
-      await Bump.updateMany({ guildId: message.guild.id }, { notify: false });
+      if (serverData) {
+        serverData.notifyUsers = [];
+        await serverData.save();
+      }
     }, BUMP_COOLDOWN);
 
   }

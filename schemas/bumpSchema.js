@@ -3,7 +3,8 @@ const { Schema, model } = require('mongoose');
 const bumpSchema = new Schema({
     guildId: {
         type: String,
-        required: true
+        required: true,
+        index: true
     },
 
     userId: {
@@ -24,8 +25,15 @@ const bumpSchema = new Schema({
     notify: {
         type: Boolean,
         default: false
+    },
+
+    notifyUsers: {
+        type: [String],
+        default: []
     }
 
 }, { timestamps: true });
+
+bumpSchema.index({ guildId: 1, userId: 1 }, { unique: true });
 
 module.exports = model('Bump', bumpSchema);

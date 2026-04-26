@@ -7,10 +7,6 @@ const {
 const { GiveawayConfig, Giveaway } = require("../schemas/giveawaySchema");
 const LogSettings = require("../schemas/logsSchema");
 
-// ─────────────────────────────────────────────
-//  parseTime
-// ─────────────────────────────────────────────
-
 /**
  * Parse une durée humaine ("1d2h30m") en millisecondes.
  * @param {string} str
@@ -32,10 +28,6 @@ function parseTime(str) {
 
   return total;
 }
-
-// ─────────────────────────────────────────────
-//  buildGiveawayEmbed
-// ─────────────────────────────────────────────
 
 /**
  * Construit l'embed pour un giveaway ACTIF.
@@ -83,10 +75,6 @@ function buildGiveawayEmbed(giveaway, guild, client, config) {
   return embed;
 }
 
-// ─────────────────────────────────────────────
-//  buildEndedEmbed
-// ─────────────────────────────────────────────
-
 /**
  * Construit l'embed pour un giveaway TERMINÉ.
  * @param {Object}  giveaway
@@ -115,10 +103,6 @@ function buildEndedEmbed(giveaway, guild, client) {
     .setTimestamp(new Date());
 }
 
-// ─────────────────────────────────────────────
-//  buildGiveawayComponents
-// ─────────────────────────────────────────────
-
 /**
  * Retourne les composants pour un giveaway actif.
  * @param {Object} giveaway
@@ -142,10 +126,6 @@ function buildGiveawayComponents(giveaway) {
   ];
 }
 
-// ─────────────────────────────────────────────
-//  buildEndedComponents
-// ─────────────────────────────────────────────
-
 /**
  * Retourne les composants pour un giveaway terminé (bouton désactivé).
  * @returns {ActionRowBuilder[]}
@@ -167,10 +147,6 @@ function buildEndedComponents() {
 
   return [new ActionRowBuilder().addComponents(endedBtn, participantsBtn)];
 }
-
-// ─────────────────────────────────────────────
-//  buildEntriesEmbed
-// ─────────────────────────────────────────────
 
 /**
  * Construit l'embed paginé de la liste des participants (style Giveaway Boat).
@@ -243,10 +219,6 @@ async function buildEntriesEmbed(
   return { embed, page, totalPages };
 }
 
-// ─────────────────────────────────────────────
-//  buildEntriesPagination
-// ─────────────────────────────────────────────
-
 /**
  * Construit les boutons de navigation pour la liste des participants.
  * @param {string} messageId   ID du message giveaway
@@ -275,10 +247,6 @@ function buildEntriesPagination(messageId, page, totalPages) {
 
   return [new ActionRowBuilder().addComponents(prevBtn, gotoBtn, nextBtn)];
 }
-
-// ─────────────────────────────────────────────
-//  drawWinners
-// ─────────────────────────────────────────────
 
 /**
  * Tire les gagnants en tenant compte des rôles requis et des entrées bonus.
@@ -337,10 +305,6 @@ async function drawWinners(giveaway, guild) {
 
   return winners;
 }
-
-// ─────────────────────────────────────────────
-//  endGiveaway
-// ─────────────────────────────────────────────
 
 /**
  * Termine un giveaway : tire les gagnants, édite le message, envoie les annonces et DM.
@@ -481,9 +445,7 @@ async function endGiveaway(client, messageId, guildId) {
   return { success: true, winners };
 }
 
-// ─────────────────────────────────────────────
-//  scheduleGiveaway
-// ─────────────────────────────────────────────
+
 
 /**
  * Programme un setTimeout pour terminer le giveaway à son échéance.
@@ -512,10 +474,6 @@ function scheduleGiveaway(client, giveaway) {
   client.giveawayTimers.set(giveaway.messageId, timeout);
 }
 
-// ─────────────────────────────────────────────
-//  cancelGiveawayTimer
-// ─────────────────────────────────────────────
-
 /**
  * Annule et supprime le timer d'un giveaway.
  * @param {Client} client
@@ -530,10 +488,6 @@ function cancelGiveawayTimer(client, messageId) {
     client.giveawayTimers.delete(messageId);
   }
 }
-
-// ─────────────────────────────────────────────
-//  sendGiveawayLog
-// ─────────────────────────────────────────────
 
 /**
  * Envoie un log dans le salon de logs configuré.
@@ -699,10 +653,6 @@ async function sendGiveawayLog(client, guildId, type, data) {
 
   await channel.send({ embeds: [embed] }).catch(() => null);
 }
-
-// ─────────────────────────────────────────────
-//  Exports
-// ─────────────────────────────────────────────
 
 module.exports = {
   parseTime,

@@ -59,35 +59,35 @@ async function handleNotify(client, interaction) {
   await interaction.deferReply({ ephemeral: true });
 
   try {
-    // Vérifier si l'utilisateur a déjà un enregistrement bump
-    const existing = await Bump.findOne({
+    // Récupérer ou créer le document du serveur pour les notifications
+    let serverData = await Bump.findOne({
       guildId: interaction.guildId,
-      userId: interaction.user.id
+      userId: interaction.guildId
     });
 
-    if (existing) {
-      // Toggle le champ notify
-      existing.notify = !existing.notify;
-      await existing.save();
-
-      if (existing.notify) {
-        await interaction.editReply({
-          content: '✅ Vous serez notifié quand le bump sera disponible !'
-        });
-      } else {
-        await interaction.editReply({
-          content: '✅ Vous ne serez plus notifié pour le prochain bump.'
-        });
-      }
-    } else {
-      // Créer un nouvel enregistrement avec notify = true
-      await Bump.create({
+    if (!serverData) {
+      serverData = await Bump.create({
         guildId: interaction.guildId,
-        userId: interaction.user.id,
+        userId: interaction.guildId,
         count: 0,
-        notify: true
+        notifyUsers: []
       });
+    }
 
+    const userId = interaction.user.id;
+    const isInArray = serverData.notifyUsers.includes(userId);
+
+    if (isInArray) {
+      // Retirer l'utilisateur de l'array
+      serverData.notifyUsers = serverData.notifyUsers.filter(id => id !== userId);
+      await serverData.save();
+      await interaction.editReply({
+        content: '✅ Vous ne serez plus notifié pour le prochain bump.'
+      });
+    } else {
+      // Ajouter l'utilisateur à l'array
+      serverData.notifyUsers.push(userId);
+      await serverData.save();
       await interaction.editReply({
         content: '✅ Vous serez notifié quand le bump sera disponible !'
       });
