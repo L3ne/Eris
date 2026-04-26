@@ -1,25 +1,34 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const ticketConfigSchema = new mongoose.Schema({
+const ticketConfigSchema = new mongoose.Schema(
+  {
     guildId: {
-        type: String,
-        required: true,
-        unique: true,
-        index: true
+      type: String,
+      required: true,
+      unique: true,
+      index: true,
     },
     logChannelId: {
-        type: String,
-        default: null
+      type: String,
+      default: null,
     },
-    supportRoles: [{
-        type: String
-    }],
-    categoryId: {
+    supportRoles: [
+      {
         type: String,
-        default: null
-    }
-}, {
-    timestamps: true
-});
+      },
+    ],
+    categoryId: {
+      type: String,
+      default: null,
+    },
+    ticketCounter: {
+      type: Number,
+      default: 0,
+    },
+  },
+  {
+    timestamps: true,
+  },
+);
 
-module.exports = mongoose.model('TicketConfig', ticketConfigSchema);
+module.exports = mongoose.model("TicketConfig", ticketConfigSchema);

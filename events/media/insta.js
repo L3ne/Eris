@@ -1,10 +1,14 @@
 const { Events, EmbedBuilder, AttachmentBuilder } = require("discord.js");
-const { igdl } = require('ab-downloader');
-const axios = require('axios');
-const fs = require('fs');
-const path = require('path');
+const { igdl } = require("ab-downloader");
+const axios = require("axios");
+const fs = require("fs");
+const path = require("path");
+const { REPL_MODE_STRICT } = require("repl");
+const { user } = require("osu-api-extended/dist/api/v2");
+const { resolvePartialEmoji } = require("discord.js");
 
-const INSTAGRAM_REGEX = /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+\/?/;
+const INSTAGRAM_REGEX =
+  /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+\/?/;
 
 module.exports = {
   name: Events.MessageCreate,
@@ -26,7 +30,8 @@ module.exports = {
 
       if (!data || !Array.isArray(data) || data.length === 0) {
         return await message.reply({
-          content: '❌ Impossible de récupérer le contenu Instagram. Le lien est peut-être privé ou invalide.'
+          content:
+            "❌ Impossible de récupérer le contenu Instagram. Le lien est peut-être privé ou invalide.",
         });
       }
 
@@ -34,33 +39,37 @@ module.exports = {
       const mediaUrl = mediaData.url;
 
       // Télécharger le fichier MP4
-      const tempDir = path.join(__dirname, '../../temp');
+      const tempDir = path.join(__dirname, "../../temp");
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
 
-      const outputPath = path.join(tempDir, `instagram_${Date.now()}_${message.author.id}.mp4`);
-      
+      const outputPath = path.join(
+        tempDir,
+        `instagram_${Date.now()}_${message.author.id}.mp4`,
+      );
+
       const response = await axios({
-        method: 'GET',
+        method: "GET",
         url: mediaUrl,
-        responseType: 'stream'
+        responseType: "stream",
       });
 
       const writer = fs.createWriteStream(outputPath);
       response.data.pipe(writer);
 
       await new Promise((resolve, reject) => {
-        writer.on('finish', resolve);
-        writer.on('error', reject);
+        writer.on("finish", resolve);
+        writer.on("error", reject);
       });
 
       const attachment = new AttachmentBuilder(outputPath, {
-        name: `instagram_${Date.now()}.mp4`
+        name: `instagram_${Date.now()}.mp4`,
       });
 
       await message.reply({
-        files: [attachment]
+        files: [attachment],
+        repliedUser: false,
       });
 
       // Nettoyer le fichier temporaire
@@ -71,15 +80,18 @@ module.exports = {
             console.log(`Fichier temporaire supprimé: ${outputPath}`);
           }
         } catch (error) {
-          console.error('Erreur lors du nettoyage du fichier temporaire:', error);
+          console.error(
+            "Erreur lors du nettoyage du fichier temporaire:",
+            error,
+          );
         }
       }, 60000);
-
     } catch (error) {
-      console.error('Erreur lors de la récupération Instagram:', error);
+      console.error("Erreur lors de la récupération Instagram:", error);
       await message.reply({
-        content: '❌ Une erreur est survenue lors de la récupération du contenu Instagram. Veuillez réessayer.'
+        content:
+          "❌ Une erreur est survenue lors de la récupération du contenu Instagram. Veuillez réessayer.",
       });
     }
-  }
+  },
 };
