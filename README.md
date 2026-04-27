@@ -17,6 +17,8 @@ node index.js
 ## features
 
 - xp system
+- giveaway system
+- tempvoice system
 - bump system
 - visual novels commands
 - moderation commands
