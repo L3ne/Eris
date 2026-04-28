@@ -1,4 +1,4 @@
-# Eris
+# Ayachi
 
 Visual novels bot for the french discord community.
 
