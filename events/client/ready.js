@@ -57,7 +57,7 @@ module.exports = {
 
         const activities = [
             { name: `${client.users.cache.size} users`, type: ActivityType.Streaming, url: 'https://twitch.tv/aaaaaaaaaaaaaaaaaaaa' },
-            { name: `Eris`, type: ActivityType.Streaming, url: 'https://twitch.tv/aaaaaaaaaaaaaaaaaaaa' }
+            { name: `Ayachi`, type: ActivityType.Streaming, url: 'https://twitch.tv/aaaaaaaaaaaaaaaaaaaa' }
         ]
 
         setInterval(() => {

@@ -6,6 +6,7 @@ const {
 } = require("discord.js");
 const { GiveawayConfig, Giveaway } = require("../schemas/giveawaySchema");
 const LogSettings = require("../schemas/logsSchema");
+const Level = require("../schemas/levelSchema");
 
 /**
  * Parse une durée humaine ("1d2h30m") en millisecondes.
@@ -41,22 +42,17 @@ function buildGiveawayEmbed(giveaway, guild, client, config) {
   const color = giveaway.color || config?.defaultColor || "#dac7bb";
   const endsAtUnix = Math.floor(giveaway.endsAt.getTime() / 1000);
 
-  // Lien cliquable vers le message (Timer) — disponible seulement si messageId existe
-  const timerLink = giveaway.messageId
-    ? ` [(Timer)](https://discord.com/channels/${giveaway.guildId}/${giveaway.channelId}/${giveaway.messageId})`
-    : "";
-
   const lines = [
-    `**${giveaway.prize}**`,
-    ``,
     `Click 🎉 button to enter!`,
     `Winners: **${giveaway.winnersCount}**`,
     `Hosted by: <@${giveaway.hostId}>`,
-    `Ends: <t:${endsAtUnix}:R>${timerLink}`,
+    `Ends: <t:${endsAtUnix}:R>`,
   ];
 
   if (giveaway.requiredRoleId)
     lines.push(`Required Role: <@&${giveaway.requiredRoleId}>`);
+  if (giveaway.requiredLevel > 0)
+    lines.push(`Required Level: **Level ${giveaway.requiredLevel}** minimum`);
   if (giveaway.bonusEntriesRoleId)
     lines.push(
       `Bonus Entries: <@&${giveaway.bonusEntriesRoleId}> (+${giveaway.bonusEntriesCount})`,
@@ -66,9 +62,10 @@ function buildGiveawayEmbed(giveaway, guild, client, config) {
 
   const embed = new EmbedBuilder()
     .setColor(color)
+    .setTitle(giveaway.prize)
     .setDescription(lines.join("\n"))
     .setFooter({ text: "Ends" })
-    .setTimestamp(giveaway.endsAt);
+    .setTimestamp();
 
   if (giveaway.image) embed.setImage(giveaway.image);
 
@@ -89,17 +86,19 @@ function buildEndedEmbed(giveaway, guild, client) {
       : "No valid winners";
 
   const lines = [
-    `**${giveaway.prize}**`,
-    ``,
     `Winners: ${winnersText}`,
     `Hosted by: <@${giveaway.hostId}>`,
-    `Ended`,
+    `Ended: <t:${Math.floor(giveaway.endsAt.getTime() / 1000)}:R>`,
   ];
 
   return new EmbedBuilder()
-    .setColor("#808080")
+    .setColor(client.color)
+    .setTitle(giveaway.prize)
     .setDescription(lines.join("\n"))
-    .setFooter({ text: "Ended" })
+    .setFooter({
+      text: client.user.username,
+      iconURL: client.user.displayAvatarURL(),
+    })
     .setTimestamp(new Date());
 }
 
@@ -128,13 +127,14 @@ function buildGiveawayComponents(giveaway) {
 
 /**
  * Retourne les composants pour un giveaway terminé (bouton désactivé).
+ * @param {Object} giveaway
  * @returns {ActionRowBuilder[]}
  */
-function buildEndedComponents() {
+function buildEndedComponents(giveaway) {
   const endedBtn = new ButtonBuilder()
     .setCustomId("giveaway_participate")
     .setEmoji("🎉")
-    .setLabel("Giveaway Ended")
+    .setLabel(giveaway.participants.length.toLocaleString("en-US"))
     .setStyle(ButtonStyle.Secondary)
     .setDisabled(true);
 
@@ -272,6 +272,12 @@ async function drawWinners(giveaway, guild) {
       continue;
     }
 
+    // Vérification du niveau XP requis
+    if (giveaway.requiredLevel > 0) {
+      const userLevel = await Level.findOne({ guildId: guild.id, userId });
+      if (!userLevel || userLevel.level < giveaway.requiredLevel) continue;
+    }
+
     // Entrée de base
     pool.push(userId);
 
@@ -344,7 +350,7 @@ async function endGiveaway(client, messageId, guildId) {
       await message
         .edit({
           embeds: [buildEndedEmbed(giveaway, guild, client)],
-          components: buildEndedComponents(),
+          components: buildEndedComponents(giveaway),
         })
         .catch(() => null);
     }
@@ -365,39 +371,25 @@ async function endGiveaway(client, messageId, guildId) {
 
       const announceEmbed = new EmbedBuilder()
         .setColor(client.color)
-        .setAuthor(
-          host
-            ? { name: host.tag, iconURL: host.avatarURL({ dynamic: true }) }
-            : { name: guild?.name ?? "Giveaway" },
-        )
-        .setThumbnail(host?.displayAvatarURL({ dynamic: true }) ?? null)
-        .setDescription(
-          `Félicitations ${winnerMentions} ! Vous avez gagné **${giveaway.prize}** !`,
-        )
-        .addFields(
-          { name: "Prix", value: giveaway.prize, inline: true },
-          { name: "Gagnant(s)", value: winnerMentions, inline: true },
-          {
-            name: "ID",
-            value: `\`\`\`ini\nHost    = ${giveaway.hostId}\nChannel = ${giveaway.channelId}\nMessage = ${messageId}\`\`\``,
-          },
-        )
-        .setFooter({
-          text: client.user.username,
-          iconURL: client.user.avatarURL({ dynamic: true }),
-        })
         .setTimestamp();
 
-      await announceChannel
-        .send({
-          content: `Félicitations ${winnerMentions} — [Voir le giveaway](${giveawayLink})`,
-          embeds: [announceEmbed],
+      await client.channels.cache
+        .get(giveaway.channelId)
+        ?.messages.fetch(giveaway.messageId)
+        .then((msg) => {
+          msg.reply({
+            content: `Félicitations ${winnerMentions} Vous avez gagné **${giveaway.prize}** !`,
+          });
         })
         .catch(() => null);
     } else {
-      await announceChannel
-        .send({
-          content: `Le giveaway **${giveaway.prize}** s'est terminé sans gagnant (pas assez de participants valides).`,
+      await client.channels.cache
+        .get(giveaway.channelId)
+        ?.messages.fetch(giveaway.messageId)
+        .then((msg) => {
+          msg.reply({
+            content: `Le giveaway **${giveaway.prize}** s'est terminé sans gagnant (pas assez de participants valides).`,
+          });
         })
         .catch(() => null);
     }
@@ -413,28 +405,28 @@ async function endGiveaway(client, messageId, guildId) {
         name: guild?.name ?? "Giveaway",
         iconURL: guild?.iconURL({ dynamic: true }) ?? undefined,
       })
-      .setDescription(`Vous avez gagné **${giveaway.prize}** !`)
-      .addFields(
-        { name: "Serveur", value: guild?.name ?? guildId, inline: true },
-        {
-          name: "Lien",
-          value: `[Voir le giveaway](${giveawayLink})`,
-          inline: true,
-        },
-        {
-          name: "ID",
-          value: `\`\`\`ini\nMessage = ${messageId}\nChannel = ${giveaway.channelId}\`\`\``,
-        },
-      )
+      .setDescription(`Contactez l'organisateur pour récupérer votre lot.`)
+      .addFields({
+        name: "Lot gagné",
+        value: `**${giveaway.prize}**`,
+        inline: true,
+      })
       .setFooter({
         text: client.user.username,
         iconURL: client.user.avatarURL({ dynamic: true }),
       })
       .setTimestamp();
-
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setLabel("Voir le Giveaway")
+        .setStyle(ButtonStyle.Link)
+        .setURL(giveawayLink),
+    );
     const user = await client.users.fetch(winnerId).catch(() => null);
     if (user) {
-      await user.send({ embeds: [dmEmbed] }).catch(() => null);
+      await user
+        .send({ embeds: [dmEmbed], components: [row] })
+        .catch(() => null);
     }
   }
 
@@ -444,8 +436,6 @@ async function endGiveaway(client, messageId, guildId) {
 
   return { success: true, winners };
 }
-
-
 
 /**
  * Programme un setTimeout pour terminer le giveaway à son échéance.

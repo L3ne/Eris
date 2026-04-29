@@ -93,6 +93,14 @@ module.exports = {
           required: false,
           description: "Couleur hex ex: #FF0000",
         },
+        {
+          name: "required_level",
+          type: ApplicationCommandOptionType.Integer,
+          required: false,
+          description: "Niveau XP minimum requis pour participer",
+          min_value: 1,
+          max_value: 500,
+        },
       ],
     },
     {
@@ -270,7 +278,7 @@ module.exports = {
     // ─── Defer ───────────────────────────────────────────────────────────
     // 'start' répond en public puis editReply ephemeral, les autres sont directement ephemeral
     if (sub === "start") {
-      await interaction.deferReply();
+      await interaction.deferReply({ ephemeral: true });
     } else {
       await interaction.deferReply({ ephemeral: true });
     }
@@ -333,6 +341,7 @@ async function handleStart(client, interaction, guild, config) {
   const hostMention = interaction.options.getBoolean("host_mention") ?? false;
   const image = interaction.options.getString("image");
   const color = interaction.options.getString("color");
+  const requiredLevel = interaction.options.getInteger("required_level") ?? 0;
 
   const durationMs = parseTime(durationStr);
   if (!durationMs || durationMs <= 0) {
@@ -364,6 +373,7 @@ async function handleStart(client, interaction, guild, config) {
     hostMention,
     pausedAt: null,
     pausedRemainingMs: null,
+    requiredLevel: requiredLevel,
   };
 
   // Envoyer le message dans le salon cible
@@ -394,6 +404,7 @@ async function handleStart(client, interaction, guild, config) {
 
   return interaction.editReply({
     content: `Giveaway créé dans ${targetChannel} — [Voir le message](https://discord.com/channels/${guild.id}/${targetChannel.id}/${msg.id})`,
+    ephemeral: true,
   });
 }
 
@@ -467,7 +478,7 @@ async function handleReroll(client, interaction, guild) {
       await message
         .edit({
           embeds: [buildEndedEmbed(giveaway, guild, client)],
-          components: buildEndedComponents(),
+          components: buildEndedComponents(giveaway),
         })
         .catch(() => null);
     }

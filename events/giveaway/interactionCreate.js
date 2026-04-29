@@ -13,6 +13,7 @@ const {
   buildGiveawayEmbed,
   buildGiveawayComponents,
 } = require("../../utils/giveawayUtils");
+const Level = require("../../schemas/levelSchema");
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -202,12 +203,25 @@ async function handleParticipate(client, interaction) {
 
   const userId = interaction.user.id;
 
-  // Vérification du rôle requis
+  // ─── Vérification du rôle requis ─────────────────────────────────────
   if (giveaway.requiredRoleId) {
     const hasRole = interaction.member.roles.cache.has(giveaway.requiredRoleId);
     if (!hasRole) {
       return interaction.editReply({
-        content: `❌ Vous devez avoir le rôle <@&${giveaway.requiredRoleId}> pour participer.`,
+        content: `Vous devez avoir le rôle <@&${giveaway.requiredRoleId}> pour participer.`,
+      });
+    }
+  }
+
+  // ─── Vérification du niveau XP requis ────────────────────────────────
+  if (giveaway.requiredLevel > 0) {
+    const userLevel = await Level.findOne({
+      guildId: interaction.guild.id,
+      userId,
+    });
+    if (!userLevel || userLevel.level < giveaway.requiredLevel) {
+      return interaction.editReply({
+        content: `Vous devez être au minimum **niveau ${giveaway.requiredLevel}** pour participer à ce giveaway. Votre niveau actuel : **${userLevel?.level ?? 0}**.`,
       });
     }
   }

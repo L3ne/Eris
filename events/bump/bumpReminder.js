@@ -1,5 +1,12 @@
-const { Events, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const {
+  Events,
+  EmbedBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+} = require("discord.js");
 const Bump = require("../../schemas/bumpSchema");
+const BumpConfig = require("../../schemas/bumpConfigSchema");
 const XPUtils = require("../../utils/xpUtils");
 const levelSettingsSchema = require("../../schemas/levelSettingsSchema");
 
@@ -10,131 +17,137 @@ module.exports = {
   name: Events.MessageCreate,
 
   async execute(client, message) {
-
     if (!message.guild) return;
     if (message.author.id !== DISBOARD_ID) return;
     if (!message.interaction) return;
 
     const embed = message.embeds[0];
     if (!embed) return;
-
     if (!embed.description?.toLowerCase().includes("bump")) return;
 
     const bumper = message.interaction.user;
+    const guildId = message.guild.id;
 
-    const levelSettings = await levelSettingsSchema.findOne({ guildId: message.guild.id });
+    // ─── Récupérer ou créer la config du serveur ──────────────────────────────
+    let config = await BumpConfig.findOne({ guildId });
+    if (!config) config = await BumpConfig.create({ guildId });
 
+    // ─── Mettre à jour les stats du bumper ────────────────────────────────────
     const data = await Bump.findOneAndUpdate(
-      {
-        guildId: message.guild.id,
-        userId: bumper.id
-      },
-      {
-        $inc: { count: 1 },
-        $set: { lastBump: new Date() }
-      },
-      {
-        upsert: true,
-        new: true
-      }
+      { guildId, userId: bumper.id },
+      { $inc: { count: 1 }, $set: { lastBump: new Date() } },
+      { upsert: true, new: true },
     );
 
-    let rewardMessage = "+300 XP";
+    // ─── Récompense XP ────────────────────────────────────────────────────────
+    let rewardMessage = config.xpEnabled
+      ? `+${config.xpAmount} XP`
+      : "Aucune récompense XP";
 
-    try {
+    if (config.xpEnabled) {
+      try {
+        const result = await XPUtils.addXP(guildId, bumper.id, config.xpAmount);
 
-      const result = await XPUtils.addXP(
-        message.guild.id,
-        bumper.id,
-        300
-      );
+        if (result?.levelUp) {
+          const levelSettings = await levelSettingsSchema.findOne({ guildId });
+          const levelUpChannel = message.guild.channels.cache.get(
+            levelSettings?.levelUpChannel,
+          );
 
-      if (result?.levelUp) {
-        const embed = new EmbedBuilder()
-          .setDescription(`🎉 Félicitations <@${bumper.id}> !\nVous avez atteint le niveau ${result.newLevel} !`)
-          .setThumbnail(bumper.displayAvatarURL({ dynamic: true }))
-          .setFooter({ text: `${client.user.username}`, iconURL: client.user.avatarURL({ dynamic: true }) })
-          .setTimestamp();
-        const channel = message.guild.channels.cache.get(levelSettings.levelUpChannel);
-        await channel.send({ embeds: [embed] });
+          if (levelUpChannel) {
+            const lvlEmbed = new EmbedBuilder()
+              .setColor(client.color)
+              .setDescription(
+                `Félicitations <@${bumper.id}> !\nVous avez atteint le niveau **${result.newLevel}** !`,
+              )
+              .setThumbnail(bumper.displayAvatarURL({ dynamic: true }))
+              .setFooter({
+                text: client.user.username,
+                iconURL: client.user.avatarURL({ dynamic: true }),
+              })
+              .setTimestamp();
+
+            await levelUpChannel.send({ embeds: [lvlEmbed] }).catch(() => null);
+          }
+        }
+      } catch (err) {
+        console.error("[Bump] Erreur XP bump:", err);
       }
-
-    } catch (err) {
-      console.error("Erreur XP bump:", err);
     }
 
+    // ─── Embed de confirmation ────────────────────────────────────────────────
     const nextBump = Math.floor((Date.now() + BUMP_COOLDOWN) / 1000);
 
     const bumpEmbed = new EmbedBuilder()
       .setColor(client.color)
-      .setTitle("Bump réussi")
-      .setThumbnail(bumper.displayAvatarURL())
-      .setDescription(`${bumper} merci pour le bump !`)
+      .setAuthor({
+        name: bumper.tag,
+        iconURL: bumper.displayAvatarURL({ dynamic: true }),
+      })
+      .setThumbnail(bumper.displayAvatarURL({ dynamic: true }))
+      .setDescription(`Merci pour le bump <@${bumper.id}> !`)
       .addFields(
-        {
-          name: "Tes bumps",
-          value: `${data.count}`,
-          inline: true
-        },
-        {
-          name: "Récompense",
-          value: rewardMessage,
-          inline: true
-        },
-        {
-          name: "Prochain bump",
-          value: `<t:${nextBump}:R>`,
-          inline: true
-        }
+        { name: "Bumps totaux", value: String(data.count), inline: true },
+        { name: "Récompense", value: rewardMessage, inline: true },
+        { name: "Prochain bump", value: `<t:${nextBump}:R>`, inline: true },
       )
-      .setTimestamp()
-      .setFooter({ text: client.user.username, iconURL: client.user.displayAvatarURL() });
+      .setFooter({
+        text: client.user.username,
+        iconURL: client.user.avatarURL({ dynamic: true }),
+      })
+      .setTimestamp();
 
-    const row = new ActionRowBuilder()
-      .addComponents(
-        new ButtonBuilder()
-          .setCustomId('bump_leaderboard')
-          .setLabel('Leaderboard')
-          .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder()
-          .setCustomId('bump_notify')
-          .setLabel('Notify Me')
-          .setStyle(ButtonStyle.Primary)
-      );
+    const row = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("bump_leaderboard")
+        .setLabel("Leaderboard")
+        .setStyle(ButtonStyle.Secondary),
+      new ButtonBuilder()
+        .setCustomId("bump_notify")
+        .setLabel("Notify Me")
+        .setStyle(ButtonStyle.Primary),
+    );
 
     const bumpMessage = await message.channel.send({
       embeds: [bumpEmbed],
-      components: [row]
+      components: [row],
     });
 
+    // ─── Rappel après le cooldown ─────────────────────────────────────────────
     setTimeout(async () => {
-      // Récupérer le document du serveur pour les notifications
-      const serverData = await Bump.findOne({
-        guildId: message.guild.id,
-        userId: message.guild.id
-      });
+      try {
+        // Recharger la config pour avoir la liste à jour des notifyUsers
+        const freshConfig = await BumpConfig.findOne({ guildId });
+        const notifyUsers = freshConfig?.notifyUsers ?? [];
 
-      const notifyUsers = serverData && serverData.notifyUsers.length > 0
-        ? serverData.notifyUsers.map(id => `<@${id}>`).join(' ')
-        : '';
-      
-      const reminderMessage = notifyUsers
-        ? `🔔 Le bump est de nouveau disponible ! ${notifyUsers} \`/bump\``
-        : `🔔 Le bump est de nouveau disponible ! \`/bump\``;
-      
-      message.channel.send(reminderMessage);
+        const mentionStr =
+          notifyUsers.length > 0
+            ? notifyUsers.map((id) => `<@${id}>`).join(" ") + " "
+            : "";
 
-      // Retirer les boutons du message de bump
-      await bumpMessage.edit({
-        components: []
-      });
+        // Déterminer le salon de rappel
+        const reminderChannel = freshConfig?.reminderChannelId
+          ? (message.guild.channels.cache.get(freshConfig.reminderChannelId) ??
+            message.channel)
+          : message.channel;
 
-      // Nettoyer les notifications
-      if (serverData) {
-        serverData.notifyUsers = [];
-        await serverData.save();
+        await reminderChannel
+          .send({
+            content: `${mentionStr}Le bump est de nouveau disponible ! \`/bump\``,
+          })
+          .catch(() => null);
+
+        // Retirer les boutons du message de bump
+        await bumpMessage.edit({ components: [] }).catch(() => null);
+
+        // Vider la liste des notifications
+        if (freshConfig) {
+          freshConfig.notifyUsers = [];
+          await freshConfig.save();
+        }
+      } catch (err) {
+        console.error("[Bump] Erreur rappel:", err);
       }
     }, BUMP_COOLDOWN);
-
-  }
+  },
 };

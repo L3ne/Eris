@@ -12,7 +12,7 @@ client.config = {
     prefix: config.prefix,
     color: config.color,
 };
-client.color = "#dac7bb";
+client.color = "#f2f2f5";
 client.commands = new Collection();
 client.events = new Collection();
 client.aliases = new Collection();

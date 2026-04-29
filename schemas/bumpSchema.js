@@ -27,11 +27,6 @@ const bumpSchema = new Schema({
         default: false
     },
 
-    notifyUsers: {
-        type: [String],
-        default: []
-    }
-
 }, { timestamps: true });
 
 bumpSchema.index({ guildId: 1, userId: 1 }, { unique: true });

@@ -1,11 +1,11 @@
 const { Events, EmbedBuilder, AttachmentBuilder } = require("discord.js");
-const { igdl } = require("ab-downloader");
+const { ttdl } = require("ab-downloader");
 const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 
-const INSTAGRAM_REGEX =
-  /https?:\/\/(www\.)?instagram\.com\/(p|reel)\/[\w-]+\/?/;
+const TIKTOK_REGEX =
+  /https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/[\d]+\/?|https?:\/\/(www\.)?vm\.tiktok\.com\/[\w-]+\/?/;
 
 module.exports = {
   name: Events.MessageCreate,
@@ -14,7 +14,7 @@ module.exports = {
     if (message.author.bot) return;
     if (!message.content) return;
 
-    const match = message.content.match(INSTAGRAM_REGEX);
+    const match = message.content.match(TIKTOK_REGEX);
     if (!match) return;
 
     const url = match[0];
@@ -22,18 +22,30 @@ module.exports = {
     try {
       await message.channel.sendTyping();
 
-      const data = await igdl(url);
+      const data = await ttdl(url);
       console.log(data);
 
-      if (!data || !Array.isArray(data) || data.length === 0) {
+      if (!data) {
         return await message.reply({
           content:
-            "❌ Impossible de récupérer le contenu Instagram. Le lien est peut-être privé ou invalide.",
+            "❌ Impossible de récupérer le contenu TikTok. Le lien est peut-être privé ou invalide.",
         });
       }
 
-      const mediaData = data[0];
-      const mediaUrl = mediaData.url;
+      // Gérer les deux formats de réponse (array ou objet)
+      let mediaUrl;
+      if (Array.isArray(data) && data.length > 0) {
+        mediaUrl = data[0].url;
+      } else if (data.video && Array.isArray(data.video) && data.video.length > 0) {
+        mediaUrl = data.video[0];
+      } else if (data.url) {
+        mediaUrl = data.url;
+      } else {
+        return await message.reply({
+          content:
+            "❌ Impossible de récupérer le contenu TikTok. Le lien est peut-être privé ou invalide.",
+        });
+      }
 
       // Télécharger le fichier MP4
       const tempDir = path.join(__dirname, "../../temp");
@@ -43,7 +55,7 @@ module.exports = {
 
       const outputPath = path.join(
         tempDir,
-        `instagram_${Date.now()}_${message.author.id}.mp4`,
+        `tiktok_${Date.now()}_${message.author.id}.mp4`,
       );
 
       const response = await axios({
@@ -61,9 +73,9 @@ module.exports = {
       });
 
       const attachment = new AttachmentBuilder(outputPath, {
-        name: `instagram_${Date.now()}.mp4`,
+        name: `tiktok_${Date.now()}.mp4`,
       });
-
+      await message.suppressEmbeds(true);
       await message.reply({
         files: [attachment],
         allowedMentions: {
@@ -86,10 +98,10 @@ module.exports = {
         }
       }, 60000);
     } catch (error) {
-      console.error("Erreur lors de la récupération Instagram:", error);
+      console.error("Erreur lors de la récupération TikTok:", error);
       await message.reply({
         content:
-          "❌ Une erreur est survenue lors de la récupération du contenu Instagram. Veuillez réessayer.",
+          "❌ Une erreur est survenue lors de la récupération du contenu TikTok. Veuillez réessayer.",
       });
     }
   },
