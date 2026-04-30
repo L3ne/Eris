@@ -1,40 +1,50 @@
-const { Events } = require('discord.js');
-const mongoose   = require('mongoose');
-const { checkVNDeals } = require('../../utils/checkVNDeals');
+const { Events } = require("discord.js");
+const mongoose = require("mongoose");
+const { checkVNDeals, cleanExpiredDeals } = require("../../utils/checkVNDeals");
 
-// Intervalle du scheduler global : toutes les 30 minutes.
-// Chaque guild possède son propre `interval` (1–24h) vérifié dans checkVNDeals.
-const SCHEDULER_TICK_MS = 30 * 60 * 1000;
+// Scheduler deals     : toutes les 30 minutes (vérifie l'intervalle par guild)
+// Scheduler nettoyage : toutes les 10 minutes (supprime les messages expirés)
+const DEALS_TICK_MS = 30 * 60 * 1_000;
+const CLEAN_TICK_MS = 10 * 60 * 1_000;
 
 module.exports = {
   name: Events.ClientReady,
   once: true,
 
   execute: async (client) => {
-    // 1. Attendre que MongoDB soit connecté avant de lancer le scheduler
+    // 1. Attendre la connexion MongoDB
     if (mongoose.connection.readyState !== 1) {
       await new Promise((resolve) => {
-        mongoose.connection.once('connected', resolve);
-        // Timeout de sécurité : résoudre après 15s même si la connexion tarde
-        setTimeout(resolve, 15_000);
+        mongoose.connection.once("connected", resolve);
+        setTimeout(resolve, 15_000); // timeout sécurité 15s
       });
     }
 
-    // 2. Délai supplémentaire pour laisser le bot finir son initialisation
-    await new Promise(r => setTimeout(r, 3_000));
+    // 2. Délai d'initialisation
+    await new Promise((r) => setTimeout(r, 3_000));
 
-    console.log('[Steam] Scheduler démarré — tick toutes les 30 minutes.');
+    console.log("[Steam] Scheduler démarré — deals:30min / nettoyage:10min");
 
-    // 3. Premier check immédiat au démarrage
-    await checkVNDeals(client).catch(err =>
-      console.error('[Steam] Erreur au premier check:', err.message),
+    // 3. Premier passage immédiat au boot
+    await checkVNDeals(client).catch((err) =>
+      console.error("[Steam] Erreur check initial:", err.message),
+    );
+    await cleanExpiredDeals(client).catch((err) =>
+      console.error("[Steam] Erreur clean initial:", err.message),
     );
 
-    // 4. Scheduler récurrent
+    // 4. Scheduler deals : toutes les 30 minutes
     setInterval(async () => {
-      await checkVNDeals(client).catch(err =>
-        console.error('[Steam] Erreur tick scheduler:', err.message),
+      await checkVNDeals(client).catch((err) =>
+        console.error("[Steam] Erreur tick deals:", err.message),
       );
-    }, SCHEDULER_TICK_MS);
+    }, DEALS_TICK_MS);
+
+    // 5. Scheduler nettoyage : toutes les 10 minutes
+    setInterval(async () => {
+      await cleanExpiredDeals(client).catch((err) =>
+        console.error("[Steam] Erreur tick nettoyage:", err.message),
+      );
+    }, CLEAN_TICK_MS);
   },
 };

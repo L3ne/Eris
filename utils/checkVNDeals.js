@@ -1,13 +1,102 @@
 const axios = require("axios");
-const { EmbedBuilder, ButtonBuilder, ButtonStyle, ActionRowBuilder } = require("discord.js");
+const {
+  EmbedBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ActionRowBuilder,
+} = require("discord.js");
 const SteamGuildConfig = require("../schemas/steamGuildConfigSchema");
 const SteamSentDeal = require("../schemas/steamSentDealSchema");
 const SteamTrackedApp = require("../schemas/steamTrackedAppSchema");
 
 const APPDETAILS_URL = "https://store.steampowered.com/api/appdetails";
+const STORE_URL = "https://store.steampowered.com/app";
+const RATE_LIMIT_MS = 3_500; // 3.5 secondes entre chaque requête Steam
 const AXIOS_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "Accept-Language": "fr-FR,fr;q=0.9",
 };
+
+// ─── Mois français → numéro ──────────────────────────────────────────────────
+
+const FR_MONTHS = {
+  janvier: 1,
+  "f\u00e9vrier": 2,
+  mars: 3,
+  avril: 4,
+  mai: 5,
+  juin: 6,
+  juillet: 7,
+  "ao\u00fbt": 8,
+  septembre: 9,
+  octobre: 10,
+  novembre: 11,
+  "d\u00e9cembre": 12,
+};
+
+/**
+ * Parse "OFFRE SP\u00c9CIALE ! La promotion prend fin le 12 mai" → timestamp Unix.
+ * Retourne null si le format est inconnu.
+ * @param {string} text
+ * @returns {number|null}
+ */
+function parseFrenchPromoDate(text) {
+  // 1. Nettoyer : retirer "OFFRE SP\u00c9CIALE !" et la phrase d'intro
+  const clean = text
+    .replace(/offre\s+sp[e\u00e9]ciale\s*!\s*/gi, "")
+    .replace(/la\s+promotion\s+prend\s+fin\s+le\s+/gi, "")
+    .trim();
+
+  // 2. Extraire "12 mai", "3 janvier", etc.
+  const match = clean.match(/(\d{1,2})\s+([a-z\u00e0-\u00ff]+)/i);
+  if (!match) return null;
+
+  const day = parseInt(match[1], 10);
+  const monthName = match[2].toLowerCase();
+  const month = FR_MONTHS[monthName];
+  if (!month) return null;
+
+  // 3. Construire la date (fin de la journ\u00e9e = 23:59:59)
+  const now = new Date();
+  const date = new Date(now.getFullYear(), month - 1, day, 23, 59, 59);
+
+  // Si la date est d\u00e9j\u00e0 pass\u00e9e, supposer l'ann\u00e9e suivante
+  if (date.getTime() < now.getTime()) date.setFullYear(now.getFullYear() + 1);
+
+  return Math.floor(date.getTime() / 1000);
+}
+
+/**
+ * Scrape la page Steam d'un jeu pour extraire la date de fin de promotion.
+ * Retourne un timestamp Unix ou null si aucune promo d\u00e9tect\u00e9e.
+ * @param {string|number} appId
+ * @returns {Promise<number|null>}
+ */
+async function fetchPromoEndDate(appId) {
+  try {
+    const url = `${STORE_URL}/${appId}/?l=french&cc=FR`;
+    const { data: html } = await axios.get(url, {
+      timeout: 10_000,
+      headers: AXIOS_HEADERS,
+    });
+
+    // L'\u00e9l\u00e9ment HTML contient: "OFFRE SP\u00c9CIALE ! La promotion prend fin le 12 mai"
+    const match = html.match(
+      /game_purchase_discount_countdown[^>]*>\s*([^<]+)/,
+    );
+    if (!match) return null;
+
+    const rawText = match[1].trim();
+    const ts = parseFrenchPromoDate(rawText);
+
+    if (ts)
+      console.log(`[Steam] Promo fin app ${appId} : ${rawText} → <t:${ts}:f>`);
+    return ts;
+  } catch (err) {
+    console.error(`[Steam] fetchPromoEndDate(${appId}):`, err.message);
+    return null;
+  }
+}
 
 // ─── API Steam ────────────────────────────────────────────────────────────────
 
@@ -33,7 +122,9 @@ async function fetchAppDetails(appId, retries = 3) {
 
       if (status === 429) {
         const wait = attempt * 10_000; // 10s, 20s, 30s
-        console.warn(`[Steam] 429 sur app ${appId} — retry ${attempt}/${retries} dans ${wait / 1000}s`);
+        console.warn(
+          `[Steam] 429 sur app ${appId} — retry ${attempt}/${retries} dans ${wait / 1000}s`,
+        );
         await new Promise((r) => setTimeout(r, wait));
         continue;
       }
@@ -43,7 +134,9 @@ async function fetchAppDetails(appId, retries = 3) {
     }
   }
 
-  console.error(`[Steam] fetchAppDetails(${appId}): échec après ${retries} tentatives`);
+  console.error(
+    `[Steam] fetchAppDetails(${appId}): échec après ${retries} tentatives`,
+  );
   return null;
 }
 /**
@@ -58,32 +151,16 @@ async function fetchAppDetails(appId, retries = 3) {
  * @returns {Promise<Record<string, Object>>}  { appId → data }
  */
 async function fetchBatchAppDetails(appIds) {
-  const CONCURRENCY = 5;
   const results = {};
 
-  for (let i = 0; i < appIds.length; i += CONCURRENCY) {
-    const chunk = appIds.slice(i, i + CONCURRENCY);
+  for (let i = 0; i < appIds.length; i++) {
+    const appId = appIds[i];
+    const data = await fetchAppDetails(appId);
+    if (data) results[appId] = data;
 
-    const settled = await Promise.allSettled(
-      chunk.map((appId) =>
-        fetchAppDetails(appId).then((data) => ({ appId, data })),
-      ),
-    );
-
-    for (const outcome of settled) {
-      if (outcome.status === "fulfilled" && outcome.value.data) {
-        results[outcome.value.appId] = outcome.value.data;
-      } else if (outcome.status === "rejected") {
-        console.error(
-          "[Steam] fetchBatchAppDetails erreur :",
-          outcome.reason?.message,
-        );
-      }
-    }
-
-    // Délai entre les chunks pour ne pas déclencher de rate-limit
-    if (i + CONCURRENCY < appIds.length) {
-      await new Promise((r) => setTimeout(r, 2_000));
+    // Rate limit : 3.5s entre chaque requ\u00eate sauf apr\u00e8s la derni\u00e8re
+    if (i < appIds.length - 1) {
+      await new Promise((r) => setTimeout(r, RATE_LIMIT_MS));
     }
   }
 
@@ -98,7 +175,12 @@ async function fetchBatchAppDetails(appIds) {
  * @param {import("discord.js").Client} client
  * @param {Object} appData  — données brutes de l'API appdetails
  */
-function buildDealEmbed(client, appData) {
+/**
+ * @param {import("discord.js").Client} client
+ * @param {Object}      appData       — donn\u00e9es brutes appdetails
+ * @param {number|null} promoEndTs    — timestamp Unix de fin de promo (ou null)
+ */
+function buildDealEmbed(client, appData, promoEndTs = null) {
   const appId = String(appData.steam_appid);
   const storeUrl = `https://store.steampowered.com/app/${appId}`;
   const price = appData.price_overview || {};
@@ -108,36 +190,47 @@ function buildDealEmbed(client, appData) {
   const finalStr = price.final_formatted || "Gratuit";
   const discount = price.discount_percent || 0;
 
+  const fields = [
+    {
+      name: "Prix original",
+      value: isFree ? "Gratuit" : `~~${originalStr}~~`,
+      inline: true,
+    },
+    { name: "R\u00e9duction", value: `-${discount}%`, inline: true },
+    {
+      name: "Prix final",
+      value: isFree ? "Gratuit" : finalStr,
+      inline: true,
+    },
+  ];
+
+  // Ajouter la date de fin de promo si disponible
+  if (promoEndTs) {
+    fields.push({
+      name: "Fin de la promo",
+      value: `<t:${promoEndTs}:f>`,
+      inline: true,
+    });
+  }
+
   return new EmbedBuilder()
     .setColor(client.color)
     .setAuthor({
       name: "Steam Deal",
-      iconURL: "https://store.steampowered.com/favicon.ico",
+      iconURL:
+        "https://upload.wikimedia.org/wikipedia/commons/thumb/8/83/Steam_icon_logo.svg/960px-Steam_icon_logo.svg.png",
       url: "https://store.steampowered.com",
     })
     .setTitle(appData.name)
     .setURL(storeUrl)
     .setDescription(appData.short_description)
     .setImage(appData.header_image)
-    .addFields(
-      {
-        name: "Prix original",
-        value: isFree ? "Gratuit" : `~~${originalStr}~~`,
-        inline: true,
-      },
-      { name: "Réduction", value: `-${discount}%`, inline: true },
-      {
-        name: "Prix final",
-        value: isFree ? "Gratuit" : finalStr,
-        inline: true,
-      },
-    )
+    .addFields(...fields)
     .setFooter({
       text: client.user.username,
       iconURL: client.user.avatarURL({ dynamic: true }),
     })
     .setTimestamp();
-
 }
 function createButton(client, appData) {
   const appId = String(appData.steam_appid);
@@ -146,7 +239,7 @@ function createButton(client, appData) {
     new ButtonBuilder()
       .setLabel("Voir sur Steam")
       .setURL(storeUrl)
-      .setStyle(ButtonStyle.Link)
+      .setStyle(ButtonStyle.Link),
   );
 }
 
@@ -195,23 +288,40 @@ async function checkGuildDeals(client, config) {
     if (!price || price.discount_percent === 0) continue;
     onSale++;
 
-    // Déjà envoyé pour cette guild ?
+    // D\u00e9j\u00e0 envoy\u00e9 pour cette guild ?
     const alreadySent = await SteamSentDeal.exists({ guildId, appId });
     if (alreadySent) continue;
 
+    // Scraper la date de fin de promo (rate limit inclus)
+    const promoEndTs = await fetchPromoEndDate(appId);
+    await new Promise((r) => setTimeout(r, RATE_LIMIT_MS));
+
     // Envoyer l'embed
-    const embed = buildDealEmbed(client, appData);
+    const embed = buildDealEmbed(client, appData, promoEndTs);
     const button = createButton(client, appData);
     const content = config.roleId ? `<@&${config.roleId}>` : undefined;
 
-    await channel.send({ content, embeds: [embed], components: [button] }).catch((err) => {
-      console.error(
-        `[Steam] Envoi impossible dans #${channel.name}:`,
-        err.message,
-      );
-    });
+    const sentMsg = await channel
+      .send({ content, embeds: [embed], components: [button] })
+      .catch((err) => {
+        console.error(
+          `[Steam] Envoi impossible dans #${channel.name}:`,
+          err.message,
+        );
+        return null;
+      });
 
-    await new SteamSentDeal({ guildId, appId }).save().catch(() => {});
+    // Sauvegarder avec messageId, channelId et promoEndTs pour le nettoyage futur
+    await new SteamSentDeal({
+      guildId,
+      appId,
+      promoEndTs: promoEndTs ?? null,
+      messageId: sentMsg?.id ?? null,
+      channelId: sentMsg ? config.channelId : null,
+    })
+      .save()
+      .catch(() => {});
+
     sent++;
   }
 
@@ -263,4 +373,68 @@ async function checkVNDeals(client) {
   }
 }
 
-module.exports = { checkVNDeals, checkGuildDeals, fetchAppDetails };
+// ─── Nettoyage des promos expirées ─────────────────────────────────────────────────────────────
+
+/**
+ * Parcourt les SentDeal dont la promo est expirée, supprime le message Discord
+ * correspondant et efface le document pour permettre une re-détection future.
+ * @param {import("discord.js").Client} client
+ */
+async function cleanExpiredDeals(client) {
+  try {
+    const now = Math.floor(Date.now() / 1000);
+
+    // Deals expirés avec un message à supprimer
+    const expired = await SteamSentDeal.find({
+      promoEndTs: { $ne: null, $lte: now },
+      messageId: { $ne: null },
+    });
+
+    if (!expired.length) return;
+
+    console.log(`[Steam] ${expired.length} deal(s) expiré(s) à nettoyer`);
+
+    let deleted = 0;
+
+    for (const deal of expired) {
+      try {
+        // Récupérer le salon
+        const channel =
+          client.channels.cache.get(deal.channelId) ||
+          (await client.channels.fetch(deal.channelId).catch(() => null));
+
+        if (channel) {
+          // Supprimer le message de l'embed deal
+          const msg = await channel.messages
+            .fetch(deal.messageId)
+            .catch(() => null);
+
+          if (msg) {
+            await msg.delete().catch(() => null);
+            deleted++;
+          }
+        }
+      } catch (err) {
+        console.error(
+          `[Steam] Erreur suppression message ${deal.messageId}:`,
+          err.message,
+        );
+      }
+
+      // Supprimer le doc MongoDB pour permettre une re-détection si re-promoé
+      await SteamSentDeal.deleteOne({ _id: deal._id }).catch(() => {});
+    }
+
+    if (deleted > 0)
+      console.log(`[Steam] ${deleted} message(s) supprimé(s) (promo terminée)`);
+  } catch (err) {
+    console.error("[Steam] Erreur cleanExpiredDeals:", err.message);
+  }
+}
+
+module.exports = {
+  checkVNDeals,
+  checkGuildDeals,
+  cleanExpiredDeals,
+  fetchAppDetails,
+};
