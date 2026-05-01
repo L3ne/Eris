@@ -9,7 +9,7 @@ discord.js | mongoose
 ## setup
 
 ```bash
-git clone https://github.com/L3ne/Eris.git
+git clone https://github.com/L3ne/Ayachi.git
 npm install
 node index.js
 ```
@@ -20,9 +20,10 @@ node index.js
 - giveaway system
 - tempvoice system
 - bump system
+- logs system
+- steam discount notifier
 - visual novels commands
 - moderation commands
-- logs system
 - MongoDB Database
 
 Discord Server: [Invite](https://discord.gg/hHcEGAYJc3)
